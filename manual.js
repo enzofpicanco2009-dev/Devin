@@ -178,7 +178,10 @@ function destaqueTag(n) {
   return '';
 }
 
-// renderiza quando a aba Manual é escolhida
+// renderiza quando a aba Manual é escolhida (caso precise atualizar)
 document.getElementById('tabs')?.addEventListener('click', e => {
   if (e.target.closest('.tab')?.dataset.view === 'manual') renderManual();
 });
+
+// pré-renderiza o conteúdo para que a aba já abra preenchida
+renderManual();
