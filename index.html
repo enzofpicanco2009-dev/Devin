@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Caminho da Faixa Preta — Treino de Jiu-Jitsu</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Caminho da Faixa Preta</h1>
+    <p class="sub">Plano de treino, registro de rolas e evolução técnica</p>
+  </div>
+</header>
+
+<nav class="wrap tabs" id="tabs">
+  <button class="tab active" data-view="hoje">Hoje</button>
+  <button class="tab" data-view="plano">Plano</button>
+  <button class="tab" data-view="treinos">Treinos</button>
+  <button class="tab" data-view="tecnicas">Técnicas</button>
+  <button class="tab" data-view="progresso">Progresso</button>
+  <button class="tab" data-view="perfil">Perfil</button>
+</nav>
+
+<main class="wrap">
+
+  <section id="view-hoje" class="view">
+    <div class="card hero">
+      <div>
+        <span class="label">Semana <b id="semanaAtual">1</b> de 12 — <span id="blocoAtual"></span></span>
+        <h2 id="tituloHoje">Sessão de hoje</h2>
+        <p id="descHoje" class="muted"></p>
+      </div>
+      <div class="streak">
+        <b id="streakNum">0</b>
+        <span>dias de sequência</span>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>Checklist da sessão</h3>
+        <ul class="checklist" id="checklistHoje"></ul>
+      </div>
+      <div class="card">
+        <h3>Foco técnico da semana</h3>
+        <ul class="bullets" id="focoSemana"></ul>
+        <h3 class="mt">Meta mental</h3>
+        <p class="muted" id="metaMental"></p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Registrar treino de hoje</h3>
+      <p class="muted small">Registre logo depois do treino — os dados alimentam suas estatísticas.</p>
+      <button class="btn" id="irRegistrar">Registrar treino</button>
+    </div>
+  </section>
+
+  <section id="view-plano" class="view hidden">
+    <div class="card">
+      <h3>Periodização de 12 semanas</h3>
+      <p class="muted small">Gerado a partir dos seus dias disponíveis por semana. Clique numa semana para ver as sessões.</p>
+      <div id="listaSemanas" class="semanas"></div>
+    </div>
+    <div class="card" id="detalheSemana"></div>
+  </section>
+
+  <section id="view-treinos" class="view hidden">
+    <div class="card">
+      <h3>Novo registro</h3>
+      <form id="formTreino" class="form">
+        <div class="row">
+          <label>Data<input type="date" name="data" required /></label>
+          <label>Tipo
+            <select name="tipo">
+              <option>Fundamentos</option>
+              <option>Drill técnico</option>
+              <option>Sparring (rolas)</option>
+              <option>Competição / treino aberto</option>
+              <option>Físico / condicionamento</option>
+              <option>Mobilidade / recuperação</option>
+            </select>
+          </label>
+          <label>Duração (min)<input type="number" name="duracao" min="0" step="5" value="90" /></label>
+        </div>
+        <div class="row">
+          <label>Rolas<input type="number" name="rolas" min="0" value="0" /></label>
+          <label>Finalizações aplicadas<input type="number" name="fin" min="0" value="0" /></label>
+          <label>Finalizações sofridas<input type="number" name="sofridas" min="0" value="0" /></label>
+          <label>Intensidade (1-10)<input type="number" name="intensidade" min="1" max="10" value="7" /></label>
+        </div>
+        <label>Técnicas trabalhadas<input type="text" name="tecnicas" placeholder="ex: armlock da guarda, raspagem de gancho" /></label>
+        <label>Anotações<textarea name="notas" rows="3" placeholder="O que funcionou, o que travou, o que treinar na próxima"></textarea></label>
+        <button class="btn" type="submit">Salvar treino</button>
+      </form>
+    </div>
+    <div class="card">
+      <h3>Histórico <span class="muted small" id="contadorTreinos"></span></h3>
+      <div id="historico"></div>
+    </div>
+  </section>
+
+  <section id="view-tecnicas" class="view hidden">
+    <div class="card">
+      <h3>Biblioteca técnica</h3>
+      <p class="muted small">Marque o nível de cada técnica: <b>—</b> não treinada, <b>Aprendendo</b>, <b>Consolidada</b> (funciona contra resistência real).</p>
+      <div id="biblioteca"></div>
+    </div>
+  </section>
+
+  <section id="view-progresso" class="view hidden">
+    <div class="grid4" id="kpis"></div>
+    <div class="card">
+      <h3>Volume por semana (minutos)</h3>
+      <div id="grafico" class="grafico"></div>
+    </div>
+    <div class="card">
+      <h3>Domínio técnico</h3>
+      <div id="progressoTecnico"></div>
+    </div>
+  </section>
+
+  <section id="view-perfil" class="view hidden">
+    <div class="card">
+      <h3>Perfil do atleta</h3>
+      <form id="formPerfil" class="form">
+        <div class="row">
+          <label>Nome<input type="text" name="nome" placeholder="Seu nome" /></label>
+          <label>Faixa
+            <select name="faixa">
+              <option>Branca</option><option>Azul</option><option>Roxa</option>
+              <option>Marrom</option><option>Preta</option>
+            </select>
+          </label>
+          <label>Dias de treino por semana
+            <select name="dias">
+              <option value="2">2</option><option value="3">3</option>
+              <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+            </select>
+          </label>
+        </div>
+        <div class="row">
+          <label>Peso atual (kg)<input type="number" name="peso" step="0.1" /></label>
+          <label>Peso da categoria (kg)<input type="number" name="pesoMeta" step="0.1" /></label>
+          <label>Início do plano<input type="date" name="inicio" /></label>
+        </div>
+        <label>Objetivo principal<input type="text" name="objetivo" placeholder="ex: pódio no campeonato estadual de faixa azul" /></label>
+        <button class="btn" type="submit">Salvar perfil</button>
+      </form>
+      <p class="muted small mt">Dados ficam salvos apenas neste navegador (localStorage).</p>
+      <button class="btn ghost mt" id="exportar">Exportar dados (JSON)</button>
+    </div>
+  </section>
+
+</main>
+<script src="app.js"></script>
+</body>
+</html>
