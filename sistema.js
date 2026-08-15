@@ -1,7 +1,8 @@
 /* Sistema absoluto de posições — espinha dorsal:
    em pé → passagem para meia-guarda → consolidação → montada →
    finalização (lapela, armlock, kata-gatame) ou costas.
-   Cada nó: objetivo, pegadas, caminho principal, árvore de reações e erros comuns. */
+   Cada nó: objetivo, pegadas, condições específicas, caminho principal,
+   microdicas, árvore de reações e erros comuns. */
 
 const FASES = [
   { id: 'pe', nome: '1. Em pé' },
@@ -23,6 +24,16 @@ const SISTEMA = [
       'Sua mão dominante na gola cruzada (colar), altura da clavícula',
       'Outra mão na manga do mesmo lado (controle de dois pontos)',
       'Cabeça alinhada, cotovelos colados, quadril atrás dos ombros'
+    ],
+    condicoes: [
+      'Ele sente o peso no calcanhar e a cabeça inclinada para frente (postura quebrada)',
+      'Seus cotovelos estão colados e as mãos pegam antes das mãos dele',
+      'Você consegue andar de lado sem ele readjustar os pés primeiro'
+    ],
+    dicas: [
+      'Micro-dica: mão na gola nunca frouxa; se ela ceder 2 cm, ele respira e recupera a postura.',
+      'Micro-dica: circule no momento em que ele está ocupado ajustando a própria pegada.',
+      'Conceito chave: postura quebrada = metade da passagem já feita.'
     ],
     caminho: [
       'Domine a pegada primeiro: quem pega primeiro dita o ritmo',
@@ -51,6 +62,16 @@ const SISTEMA = [
       'Cabeça de um lado só (cross-face antecipado), peito colado',
       'Um pé por dentro das pernas dele para bloquear a guarda'
     ],
+    condicoes: [
+      'Não existe espaço entre os seus quadris e os dele',
+      'A cabeça dele virada para o lado do seu peito',
+      'Peso dele carregado em uma perna só'
+    ],
+    dicas: [
+      'Micro-dica: antes de cair, amarre a canela dele com a sua canela (controla a perna de fora).',
+      'Micro-dica: não puxe com os braços para baixo — empurre com o quadril para frente.',
+      'Conceito chave: body lock bem feito já é metade da passagem.'
+    ],
     caminho: [
       'Quebre a postura e feche o body lock sem espaço entre os quadris',
       'Ande na direção do lado da cabeça dele até tirar a base',
@@ -76,6 +97,16 @@ const SISTEMA = [
       'Cotovelos por dentro dos joelhos dele',
       'Costas retas, quadril baixo'
     ],
+    condicoes: [
+      'Ele não consegue subir os quadris acima da linha do seu quadril',
+      'Seus cotovelos estão dentro dos joelhos dele (evita pendurar triângulo)',
+      'Você sobe um pé de cada vez mantendo o quadril à frente'
+    ],
+    dicas: [
+      'Micro-dica: empurre o quadril dele para baixo com as mãos, não apenas para longe.',
+      'Micro-dica: se ele abraçar sua cabeça, abaixe o queixo e segure a gola dele para trás.',
+      'Conceito chave: a abertura é feita pela altura do seu quadril, não pela força dos braços.'
+    ],
     caminho: [
       'Suba um pé, depois o outro, empurrando o quadril dele pra baixo',
       'Fique em pé com o quadril à frente: as pernas dele abrem pela gravidade',
@@ -87,7 +118,10 @@ const SISTEMA = [
       { se: 'Ele senta na sua perna (guarda fechada alta)', entao: 'Sacuda o quadril, gire de lado e desça a perna dele' },
       { se: 'Ele abre e engancha DLR', entao: 'Vá para o leg drag', proximo: 'entrada-legdrag' }
     ],
-    erros: ['Abrir de joelhos contra alguém forte de guarda', 'Deixar o cotovelo longe do corpo (convite ao armlock)']
+    erros: [
+      'Abrir de joelhos contra alguém forte de guarda',
+      'Deixar o cotovelo longe do corpo (convite ao armlock)'
+    ]
   },
   {
     id: 'entrada-kneecut',
@@ -98,6 +132,16 @@ const SISTEMA = [
       'Underhook no braço do lado que você corta',
       'Mão de fora controlando a gola/ombro ou a manga do braço de baixo',
       'Joelho cortando na coxa, canela colada, pé de fora com dedos no chão (base tripé)'
+    ],
+    condicoes: [
+      'A ponta do joelho dele aponta para cima (não para você) — ele não pode colocar whizzer ainda',
+      'Sua mão de fora empurra o joelho dele para baixo',
+      'Você tem o underhook antes de colocar o peso no corte'
+    ],
+    dicas: [
+      'Micro-dica: corte com o joelho e a canela, não com o pé; o pé fica no chão para a base.',
+      'Micro-dica: se ele tenta colocar o whizzer, abraçe a cabeça dele e vire o rosto para o outro lado.',
+      'Conceito chave: underhook + cross-face = você passa; falta um dos dois = você é raspado.'
     ],
     caminho: [
       'Trave a perna de baixo dele com o seu joelho (cortando na coxa)',
@@ -123,6 +167,16 @@ const SISTEMA = [
       'Duas mãos nas panturrilhas/calça (toreando)',
       'No leg drag: perna dele atravessada no seu quadril, mão na lapela dele'
     ],
+    condicoes: [
+      'Seus dois cotovelos estão colados ao corpo — ele não consegue colocar armlock/triângulo',
+      'A perna arrastada cruza o corpo dele, travando o quadril',
+      'Você cai com o peito colado na perna dele'
+    ],
+    dicas: [
+      'Micro-dica: no toreando, empurre os joelhos e ande na diagonal — nunca em linha reta por cima.',
+      'Micro-dica: leg drag exige afundar o quadril na coxa dele antes de virar; senão ele só recompõe.',
+      'Conceito chave: depois de arrastar, o próximo passo é o underhook, não a montada.'
+    ],
     caminho: [
       'Empurre os joelhos dele para um lado e circule para o outro',
       'Arraste a perna dele através do seu corpo e afunde o quadril nela',
@@ -147,6 +201,17 @@ const SISTEMA = [
       'Cross-face profundo (seu braço passando pelo rosto, mão no ombro/lapela dele)',
       'Underhook no braço de baixo dele — nunca deixe ele ter o underhook',
       'Base larga, quadril pesado e baixo, cabeça do lado oposto ao da perna presa'
+    ],
+    condicoes: [
+      'Ele não consegue virar o rosto para você porque o cross-face é profundo',
+      'Seu quadril está mais baixo que o dele',
+      'A perna dele que está presa não consegue encontrar o gancho na sua perna'
+    ],
+    dicas: [
+      'Micro-dica: use o ombro/queixo no rosto dele para virar a cabeça — não precisa forçar com o braço.',
+      'Micro-dica: se ele pega o underhook, abaixe o quadril e puxe o braço dele para o chão antes de qualquer coisa.',
+      'Micro-dica: para liberar a perna, cruze o pé livre e faça uma alavanca com o joelho, não puxe.',
+      'Conceito chave: cabeça do lado oposto da perna presa elimina o whizzer e o underhook dele.'
     ],
     caminho: [
       'Primeiro: peso. Peito no peito, quadril no chão',
@@ -180,6 +245,17 @@ const SISTEMA = [
       'Quadril colado no dele, joelhos apertando (um no quadril, um na axila)',
       'Peito no esterno dele, dedos dos pés no chão para pressão'
     ],
+    condicoes: [
+      'A cabeça dele vira para longe do seu quadril',
+      'Seu quadril está exatamente acima do quadril dele (não na barriga)',
+      'O braço de baixo dele está preso entre o seu peito e o chão'
+    ],
+    dicas: [
+      'Micro-dica: jogue seu peso no ombro do cross-face, não na mão — mão é alvo de kimura.',
+      'Micro-dica: quando ele faz frames, não tente passar por cima; remova o frame primeiro empurrando o cotovelo para dentro.',
+      'Micro-dica: para subir para montada, primeiro deslize seu joelho que está no quadril até a linha do umbigo.',
+      'Conceito chave: posição morta = ele não gira. Se ele gira, você ainda não consolidou.'
+    ],
     caminho: [
       'Respire e afunde o peso: a posição precisa "morrer" antes de progredir',
       'Mate os frames dele: empurre o cotovelo dele pra dentro, controle o punho',
@@ -206,6 +282,17 @@ const SISTEMA = [
       'Cross-face ou controle de gola cruzada',
       'Um braço dele isolado acima da linha da cabeça'
     ],
+    condicoes: [
+      'Ele não consegue fazer ponte porque seus joelhos travam os quadris',
+      'Seu quadril está na linha do esterno, não na barriga',
+      'Um braço dele está fora da linha do corpo (acima da cabeça)'
+    ],
+    dicas: [
+      'Micro-dica: na montada alta, incline-se levemente para frente para bloquear a ponte, não para trás.',
+      'Micro-dica: para isolar o braço, empurre o cotovelo dele para cima enquanto você desliza o joelho para o S-mount.',
+      'Micro-dica: se ele tenta elbow escape, coloque grapevine (gancho) na perna do mesmo lado da fuga.',
+      'Conceito chave: montada é posição de controle; finalização é consequência, não objetivo.'
+    ],
     caminho: [
       'Suba pra montada alta e sente no peito, não no abdômen',
       'Mate as fugas: elbow escape (grapevine / ganchos) e ponte (peso na direção da ponte)',
@@ -231,6 +318,17 @@ const SISTEMA = [
       'Ganchos nos quadris ou body triangle',
       'Cabeça do lado do braço de baixo (regra de segurança)'
     ],
+    condicoes: [
+      'Uma costa dele está no chão e o outro ombro aponta para cima',
+      'Sua cabeça está do lado do braço de baixo (não do de cima)',
+      'Você conseguiu travar ganchos ou body triangle'
+    ],
+    dicas: [
+      'Micro-dica: body triangle é um controle defensivo; ganchos nas coxas permitem atacar mais rápido.',
+      'Micro-dica: para puxar o ombro dele para trás, empurre com a perna de baixo, não só com as mãos.',
+      'Micro-dica: se ele defende o mata-leão com a mão, use a mão de cima para arrancar a defesa primeiro.',
+      'Conceito chave: seatbelt antes dos ganchos — se você perde o seatbelt, perde as costas.'
+    ],
     caminho: [
       'Trave o seatbelt antes dos ganchos',
       'Fique do lado do braço de baixo (side sitting) — não deixe ele te esmagar contra o chão',
@@ -252,6 +350,16 @@ const SISTEMA = [
     nome: 'Estrangulamento de lapela cruzada (montada)',
     objetivo: 'Finalizar com a lapela dele, usando a pressão da montada — a finalização mais previsível.',
     pegadas: ['Mão profunda na lapela cruzada, dedos por dentro', 'Segunda mão na outra lapela por cima'],
+    condicoes: [
+      'Ele está plano com a cabeça ligeiramente levantada pela pressão',
+      'Sua mão primeira já está nas costas dele (lapela cruzada profunda)',
+      'Seu quadril permanece baixo na montada durante todo o movimento'
+    ],
+    dicas: [
+      'Micro-dica: não puxe a lapela para cima — gire os punhos para fora e empurre o peito.',
+      'Micro-dica: se ele defende com a mão na sua garganta, use o cotovelo para abrir e reengatar.',
+      'Conceito chave: estrangulamento de lapela é pressão, não alavanca de braço.'
+    ],
     caminho: [
       'Pegada profunda na lapela cruzada (a partir da montada alta)',
       'Cotovelo no chão, peito pressionando',
@@ -270,6 +378,16 @@ const SISTEMA = [
     nome: 'Armlock da montada (S-mount)',
     objetivo: 'Atacar o braço que ele estende para te empurrar.',
     pegadas: ['Braço dele isolado, seu peito no cotovelo dele', 'Mão dele apontando para o teto', 'Joelho colado na cabeça dele'],
+    condicoes: [
+      'O braço dele está acima da linha do seu quadril (perto da sua cabeça)',
+      'Seu joelho da frente está colado na cabeça dele, bloqueando a fuga',
+      'Seu quadril está alinhado com o ombro dele'
+    ],
+    dicas: [
+      'Micro-dica: caia para trás devagar, mantendo os joelhos juntos; velocidade cede espaço.',
+      'Micro-dica: se ele une as mãos para defender, torça o pulso para fora e empurre com o quadril.',
+      'Conceito chave: no armlock, o quadril fecha a articulação; os braços só seguram.'
+    ],
     caminho: [
       'Isole o braço acima da cabeça e passe para S-mount',
       'Cole o joelho na orelha dele e sente no ombro',
@@ -288,6 +406,16 @@ const SISTEMA = [
     nome: 'Kata-gatame (arm triangle)',
     objetivo: 'Estrangular com o braço dele e o seu ombro — funciona do topo, da lateral e da montada.',
     pegadas: ['Braço dele cruzado no próprio pescoço', 'Sua cabeça colada no braço dele', 'Mãos em gable grip'],
+    condicoes: [
+      'O braço dele está cruzado sobre o pescoço dele',
+      'Sua cabeça está no lado de dentro do braço (não do lado do cotovelo)',
+      'Você contrai para frente e para baixo, não para os lados'
+    ],
+    dicas: [
+      'Micro-dica: para travar, puxe a cabeça dele para dentro com uma mão e empurre a própria cabeça para fora.',
+      'Micro-dica: deslize para o lado (sair da montada) para finalizar — na montada o ângulo é ruim.',
+      'Conceito chave: kata-gatame finaliza pela pressão do ombro + braço; não é torção.'
+    ],
     caminho: [
       'Aproveite quando ele empurra seu rosto ou defende o armlock',
       'Empurre o braço dele para o outro lado do pescoço dele com a sua cabeça',
@@ -306,6 +434,16 @@ const SISTEMA = [
     nome: 'Mata-leão / bow and arrow (costas)',
     objetivo: 'Fechar a luta a partir das costas.',
     pegadas: ['Braço por baixo do queixo, mão no bíceps oposto', 'Ou lapela dele + perna na cabeça (bow and arrow)'],
+    condicoes: [
+      'Você tem o seatbelt e ganchos/body triangle',
+      'Há espaço suficiente sob o queixo dele para deslizar a mão',
+      'Ele não consegue trazer as duas mãos para dentro da defesa'
+    ],
+    dicas: [
+      'Micro-dica: a mão desliza por baixo do queixo usando o próprio queixo como calha; não tente " entrar" de força.',
+      'Micro-dica: bow and arrow exige puxar a perna na cabeça dele para arquear o corpo — sem a perna, é só pressão.',
+      'Conceito chave: quem controla a cabeça e a coluna finaliza as costas.'
+    ],
     caminho: [
       'Puxe o ombro dele para trás para criar espaço no queixo',
       'Deslize a mão por baixo do queixo (nunca por cima)',
@@ -313,7 +451,7 @@ const SISTEMA = [
       'Se ele defender bem, troque para bow and arrow com a lapela'
     ],
     reacoes: [
-      { se: 'Ele protege o queixo', entao: 'Use a lapela: bow and arrow' },
+      { se: 'Ele protege o queixo com as duas mãos', entao: 'Use a lapela: bow and arrow' },
       { se: 'Ele tenta girar', entao: 'Body triangle e continue atacando' }
     ],
     erros: ['Forçar a mão por cima do queixo', 'Perder o seatbelt ao atacar']
@@ -348,6 +486,9 @@ function renderNo() {
       <div>
         <h3 class="mt">Pegadas</h3>
         <ul class="bullets">${n.pegadas.map(p => `<li>${p}</li>`).join('')}</ul>
+        ${n.condicoes ? `
+          <h3 class="mt">Condições específicas</h3>
+          <ul class="bullets cond">${n.condicoes.map(p => `<li>${p}</li>`).join('')}</ul>` : ''}
         <h3 class="mt">Caminho principal</h3>
         <ol class="bullets">${n.caminho.map(p => `<li>${p}</li>`).join('')}</ol>
       </div>
@@ -361,13 +502,16 @@ function renderNo() {
               ${r.proximo ? `<button class="link" data-ir="${r.proximo}">ir para: ${porId(r.proximo)?.nome || r.proximo}</button>` : ''}
             </div>`).join('')}
         </div>
+        ${n.dicas ? `
+          <h3 class="mt">Dicas específicas</h3>
+          <ul class="bullets dicas">${n.dicas.map(d => `<li>${d}</li>`).join('')}</ul>` : ''}
         <h3 class="mt">Erros que te fazem perder a posição</h3>
         <ul class="bullets erros">${n.erros.map(p => `<li>${p}</li>`).join('')}</ul>
       </div>
     </div>
     <div class="mt">
       <span class="muted small">Seu nível nesta posição:</span>
-      <span class="niveis">${NIVEIS.map((x, i) =>
+      <span class="niveis">${['—','Aprendendo','Consolidada'].map((x, i) =>
         `<button data-nivelno="${i}" class="${nivel === i ? 'on' : ''}">${x}</button>`).join('')}</span>
     </div>`;
 }

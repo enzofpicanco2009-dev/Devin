@@ -132,3 +132,18 @@ main { padding: 20px 20px 60px; }
   border-radius: 8px; padding: 4px 9px; font-size: 12px; cursor: pointer; margin-left: 4px;
 }
 .niveis button.on { background: var(--accent2); border-color: var(--accent2); color: #06210f; font-weight: 600; }
+.dicionario, .conceitos, .micro-fase { display: flex; flex-direction: column; gap: 8px; }
+.termo { background: var(--card2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.termo summary { font-weight: 600; cursor: pointer; }
+.termo div { margin-top: 6px; color: var(--muted); }
+.conceito { background: var(--card2); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+.conceito .cab { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+.conceito .desc { color: var(--text); margin-bottom: 4px; }
+.conceito .aplica { font-size: 12px; color: var(--muted); }
+.tag.critico { background: #ffd70020; color: #ffd700; border: 1px solid #ffd70050; }
+.tag.alto { background: #ff7b0020; color: #ff7b00; border: 1px solid #ff7b0050; }
+.dicas li, .cond li { margin-bottom: 6px; }
+.dicas li::marker { color: var(--accent2); }
+.cond li::marker { color: var(--accent); }
+.micro-fase h4 { color: var(--accent); margin: 10px 0 6px; }
+.micro-no { background: var(--card2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
