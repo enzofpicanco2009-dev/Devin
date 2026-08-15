@@ -16,6 +16,7 @@
 
 <nav class="wrap tabs" id="tabs">
   <button class="tab active" data-view="hoje">Hoje</button>
+  <button class="tab" data-view="sistema">Sistema</button>
   <button class="tab" data-view="plano">Plano</button>
   <button class="tab" data-view="treinos">Treinos</button>
   <button class="tab" data-view="tecnicas">Técnicas</button>
@@ -56,6 +57,15 @@
       <p class="muted small">Registre logo depois do treino — os dados alimentam suas estatísticas.</p>
       <button class="btn" id="irRegistrar">Registrar treino</button>
     </div>
+  </section>
+
+  <section id="view-sistema" class="view hidden">
+    <div class="card">
+      <h3>Sistema de posições</h3>
+      <p class="muted small">Espinha dorsal: em pé → passagem para meia-guarda → consolidação → montada → finalização (lapela, armlock, kata-gatame) ou costas. Clique numa posição para ver objetivo, pegadas, caminho e a árvore de reações.</p>
+      <div id="mapaSistema" class="mapa"></div>
+    </div>
+    <div class="card" id="detalheNo"></div>
   </section>
 
   <section id="view-plano" class="view hidden">
@@ -156,5 +166,6 @@
 
 </main>
 <script src="app.js"></script>
+<script src="sistema.js"></script>
 </body>
 </html>

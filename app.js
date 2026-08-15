@@ -125,19 +125,19 @@ const BLOCOS = [
       'Base e postura: aprender a não ser raspado'
     ], mental: 'Ego zero: perder posição no treino é informação, não derrota. Meta = 200 repetições limpas por técnica.' },
   { nome: 'Bloco 2 — Sistema de passagem', semanas: [4, 5, 6], foco: [
-      'Body lock pass (em pé e no chão) — sua passagem âncora',
-      'Leg drag e toreando: conectar entradas em cadeia',
+      'Body lock e knee cut até a meia-guarda por cima — sua passagem âncora',
+      'Meia-guarda por cima: matar o underhook dele e liberar a perna',
       'Neutralizar De La Riva, aranha e lasso',
       'Prevenção de leglock ao passar (false reap, K-guard)'
     ], mental: 'Pense como Gordon: cada passagem tem uma reação prevista. Escreva a árvore de decisão de cada posição.' },
   { nome: 'Bloco 3 — Pressão irraspável', semanas: [7, 8, 9], foco: [
       'Cross-face + underhook: controle antes de progredir',
       'Reagir a ponte, framing e recuperação de guarda',
-      'Transições topo → norte-sul → costas sem perder pressão',
-      'Finalizações do topo: arm triangle, mata-leão, armlock'
+      'Meia-guarda → lateral → montada sem perder o cross-face',
+      'Finalizações da montada: lapela cruzada, armlock, kata-gatame, costas'
     ], mental: 'Regra do bloco: em toda rola, 3 minutos apenas mantendo o topo sem finalizar. Consolidar antes de atacar.' },
   { nome: 'Bloco 4 — Aplicação e criatividade', semanas: [10, 11, 12], foco: [
-      'Rolas temáticas: começar sempre passando guarda',
+      'Rolas temáticas: começar sempre na meia-guarda por cima',
       'Improvisar entradas fora do roteiro (estilo Mica)',
       'Simulação de luta: 3 rounds de 5-6 min em ritmo de competição',
       'Ajuste de peso e afinamento para competir'
