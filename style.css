@@ -147,3 +147,17 @@ main { padding: 20px 20px 60px; }
 .cond li::marker { color: var(--accent); }
 .micro-fase h4 { color: var(--accent); margin: 10px 0 6px; }
 .micro-no { background: var(--card2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+
+.modo-toggle { display: flex; gap: 8px; margin-bottom: 14px; }
+.btn-modo { background: var(--card2); border: 1px solid var(--line); color: var(--muted); border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+.btn-modo:hover { color: var(--text); }
+.btn-modo.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.fluxo-wrap { width: 100%; overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }
+.fluxo-svg { display: block; min-width: 1000px; }
+.no-text { font-size: 11px; color: var(--text); text-align: center; height: 100%; display: flex; align-items: center; justify-content: center; line-height: 1.25; padding: 2px; }
+.no.sel .no-text { color: #fff; font-weight: 600; }
+.tags-conceito { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.fluxo-rect { fill: var(--card2); stroke: var(--line); stroke-width: 1; cursor: pointer; }
+.fluxo-rect:hover { stroke: var(--accent); }
+.no.sel .fluxo-rect { fill: var(--accent); stroke: var(--accent); }
+.reacao-line { stroke: var(--muted); stroke-width: 1.6; fill: none; opacity: .65; }
