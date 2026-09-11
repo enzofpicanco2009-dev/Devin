@@ -36,6 +36,22 @@ def _de_segmento(i: int, s: dict) -> Grupo:
     return Grupo(s["start"], s["end"], [s["text"]], list(s.get("words", [])), [i])
 
 
+def limitar_ao_audio(segmentos: list[dict], duracao_audio: float) -> list[dict]:
+    """Whisper pode estourar alguns ms além do fim do áudio; recorta tempos ao intervalo válido."""
+    saida = []
+    for s in segmentos:
+        end = min(s["end"], duracao_audio)
+        start = min(s["start"], end)
+        if end <= start:
+            continue
+        palavras = []
+        for w in s.get("words", []):
+            we = min(w["end"], duracao_audio)
+            palavras.append({**w, "start": min(w["start"], we), "end": we})
+        saida.append({**s, "start": start, "end": end, "words": palavras})
+    return saida
+
+
 def agrupar_por_pausa(segmentos: list[dict], pausa: float) -> list[Grupo]:
     grupos: list[Grupo] = []
     for i, s in enumerate(segmentos):
@@ -161,7 +177,7 @@ def executar(projeto_id: str, force: bool = False) -> None:
     cfg = resolver(projeto)
     r = cfg.estilo.ritmo
     trans = json.loads(c.transcricao_json.read_text(encoding="utf-8"))
-    segmentos = trans["segmentos"]
+    segmentos = limitar_ao_audio(trans["segmentos"], t.audio.duracao_s)
 
     grupos = agrupar_por_pausa(segmentos, r.pausa_corte_s)
     n_pausa = len(grupos)

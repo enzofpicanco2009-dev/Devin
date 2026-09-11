@@ -87,6 +87,7 @@ class Timeline(BaseModel):
     narrativa: Optional[dict[str, Any]] = None
     cenas: list[Cena] = Field(default_factory=list)
     historico_templates: dict[str, int] = Field(default_factory=dict)
+    artefatos: dict[str, str] = Field(default_factory=dict)  # etapa[:formato] -> hash das entradas
     validacao: Validacao = Field(default_factory=Validacao)
 
     @model_validator(mode="after")

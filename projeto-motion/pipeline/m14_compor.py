@@ -1,7 +1,7 @@
 """M14 — Mixa o áudio original no vídeo renderizado e valida sincronia (FFmpeg)."""
 from __future__ import annotations
 
-from .comum import Caminhos, carregar_projeto, carregar_timeline, duracao_s, rodar, salvar_timeline
+from .comum import Caminhos, carregar_projeto, carregar_timeline, duracao_s, rodar, salvar_timeline, sha256_obj
 
 ETAPA = "m14"
 
@@ -15,10 +15,15 @@ def executar(projeto_id: str, force: bool = False, formato_id: str | None = None
         raise RuntimeError("m13 não concluída")
     formato = projeto.formato(formato_id)
     video = c.video_mudo(formato.id)
-    audio = (c.raiz / projeto.entrada.audio).resolve()
+    audio = c.entrada(projeto.entrada.audio)
     final = c.final(formato.id)
-    if t.concluida(ETAPA) and final.exists() and not force:
-        print(f"[{ETAPA}] já concluída (use --force para refazer)")
+    hash_video = t.artefatos.get(f"m13:{formato.id}")
+    if not hash_video or not video.exists():
+        raise RuntimeError(f"m13 não concluída para o formato {formato.id}")
+    chave = sha256_obj({"video": hash_video, "audio": t.audio.hash, "loudness": normalizar_loudness})
+    chave_id = f"{ETAPA}:{formato.id}"
+    if t.artefatos.get(chave_id) == chave and final.exists() and not force:
+        print(f"[{ETAPA}] já concluída para {formato.id} (use --force para refazer)")
         return
 
     filtro = ["-af", "loudnorm=I=-14:LRA=11:TP=-1"] if normalizar_loudness else []
@@ -37,5 +42,6 @@ def executar(projeto_id: str, force: bool = False, formato_id: str | None = None
         raise RuntimeError(f"Dessincronia: vídeo final {dv:.3f}s vs áudio {da:.3f}s")
 
     t.marcar(ETAPA)
+    t.artefatos[chave_id] = chave
     salvar_timeline(c, t)
     print(f"[{ETAPA}] ok: {final} ({dv:.2f}s, áudio {da:.2f}s)")

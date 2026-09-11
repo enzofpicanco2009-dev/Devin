@@ -5,10 +5,18 @@ import time
 
 from .comum import (
     Caminhos, carregar_projeto, carregar_timeline, info_audio, nova_timeline,
-    rodar, salvar_json, salvar_timeline,
+    rodar, salvar_json, salvar_timeline, sha256_obj,
 )
 
 ETAPA = "m01"
+
+
+def chave_cache(audio_hash: str | None, projeto) -> str:
+    return sha256_obj({
+        "audio": audio_hash,
+        "idioma": projeto.entrada.idioma,
+        "transcricao": projeto.transcricao.model_dump(),
+    })
 
 
 def preparar_wav(c: Caminhos, origem) -> None:
@@ -23,17 +31,20 @@ def executar(projeto_id: str, force: bool = False) -> None:
 
     c = Caminhos(projeto_id)
     projeto = carregar_projeto(c)
-    audio_origem = (c.raiz / projeto.entrada.audio).resolve()
+    audio_origem = c.entrada(projeto.entrada.audio)
     if not audio_origem.exists():
         raise FileNotFoundError(f"Áudio não encontrado: {audio_origem}")
 
+    audio = info_audio(audio_origem)
+    chave = chave_cache(audio.hash, projeto)
     if c.timeline_json.exists() and not force:
         t = carregar_timeline(c)
         if t.concluida(ETAPA) and c.transcricao_json.exists():
-            print(f"[{ETAPA}] já concluída (use --force para refazer)")
-            return
+            if t.artefatos.get(ETAPA) == chave:
+                print(f"[{ETAPA}] já concluída (use --force para refazer)")
+                return
+            print(f"[{ETAPA}] áudio ou configuração de transcrição mudou — refazendo tudo")
 
-    audio = info_audio(audio_origem)
     t = nova_timeline(projeto, audio)
     preparar_wav(c, audio_origem)
 
@@ -43,7 +54,7 @@ def executar(projeto_id: str, force: bool = False) -> None:
 
     prompt = None
     if projeto.entrada.roteiro:
-        roteiro = (c.raiz / projeto.entrada.roteiro)
+        roteiro = c.entrada(projeto.entrada.roteiro)
         if roteiro.exists():
             prompt = " ".join(roteiro.read_text(encoding="utf-8").split()[:150])
 
@@ -87,6 +98,7 @@ def executar(projeto_id: str, force: bool = False) -> None:
         )
 
     t.marcar(ETAPA)
+    t.artefatos[ETAPA] = chave
     salvar_timeline(c, t)
     print(
         f"[{ETAPA}] {len(segmentos)} segmentos em {time.time() - inicio:.1f}s "

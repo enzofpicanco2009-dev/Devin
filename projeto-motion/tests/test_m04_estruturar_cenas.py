@@ -79,3 +79,24 @@ def test_layout_por_formato():
     assert caracteres_por_linha(28, 1080, 6) < 18
     assert linhas_por_formato(3, 1920, 1080) == 3
     assert linhas_por_formato(3, 1080, 1920) == 6
+
+
+def test_limita_transcricao_ao_audio():
+    from pipeline.m04_estruturar_cenas import limitar_ao_audio
+
+    segs = [{"start": 0, "end": 9.9, "text": "a", "words": []},
+            {"start": 9.95, "end": 10.1, "text": "b", "words": [{"word": "b", "start": 9.95, "end": 10.1}]}]
+    out = limitar_ao_audio(segs, 10.0)
+    assert out[-1]["end"] == 10.0 and out[-1]["words"][0]["end"] == 10.0
+    cenas = montar_cenas(agrupar_por_pausa(out, 0.4), 10.0, R)
+    assert all(c.end_s <= c.render_end_s for c in cenas)
+
+
+def test_id_projeto_rejeita_traversal():
+    import pytest
+    from pipeline.comum import Caminhos
+
+    with pytest.raises(ValueError):
+        Caminhos("../etc")
+    with pytest.raises(ValueError):
+        Caminhos("a/b")

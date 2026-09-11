@@ -61,7 +61,7 @@ def props_titulo_impacto(cena: Cena, cfg: ConfigResolvida, avisos: list[str]) ->
     sem = cena.decisao.props_semanticas if cena.decisao else {}
     tema, estilo = cfg.tema, cfg.estilo
     tip = tema.tipografia
-    texto = sem.get("texto", cena.texto)
+    texto = "" if cena.preenchimento else (sem.get("texto") or cena.texto)
     safe = tema.safe_areas.get(cfg.formato.id) or next(iter(tema.safe_areas.values()))
     max_chars = caracteres_por_linha(tip.max_caracteres_linha, cfg.formato.largura, safe.lados)
     max_linhas = linhas_por_formato(tip.max_linhas_titulo, cfg.formato.largura, cfg.formato.altura)
@@ -123,6 +123,7 @@ def executar(projeto_id: str, force: bool = False, formato_id: str | None = None
         if etapa in t.etapas_concluidas:
             t.etapas_concluidas.remove(etapa)
     t.marcar(ETAPA)
+    t.artefatos[ETAPA] = cfg.formato.id
     salvar_timeline(c, t)
     print(f"[{ETAPA}] props finais geradas para {len(t.cenas)} cenas (formato {cfg.formato.id}); "
           f"{len(avisos)} aviso(s)")

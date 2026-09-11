@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -16,8 +17,13 @@ REMOTION = RAIZ / "remotion"
 PROJETOS = RAIZ / "projetos"
 
 
+ID_PROJETO_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
+
+
 class Caminhos:
     def __init__(self, projeto_id: str):
+        if not ID_PROJETO_RE.match(projeto_id):
+            raise ValueError(f"ID de projeto inválido: {projeto_id!r} (use letras, números, _ e -)")
         self.raiz = PROJETOS / projeto_id
         if not self.raiz.is_dir():
             raise FileNotFoundError(f"Projeto não encontrado: {self.raiz}")
@@ -39,6 +45,13 @@ class Caminhos:
     def timeline_render(self, formato_id: str) -> Path:
         return self.cache / f"timeline_render_{formato_id}.json"
 
+    def entrada(self, relativo: str) -> Path:
+        """Resolve um caminho de projeto.json garantindo que fique dentro da pasta do projeto."""
+        alvo = (self.raiz / relativo).resolve()
+        if not alvo.is_relative_to(self.raiz.resolve()):
+            raise ValueError(f"Caminho fora do projeto: {relativo}")
+        return alvo
+
 
 def carregar_projeto(c: Caminhos) -> Projeto:
     return Projeto.model_validate_json(c.projeto_json.read_text(encoding="utf-8"))
@@ -51,6 +64,7 @@ def carregar_timeline(c: Caminhos) -> Timeline:
 
 
 def salvar_timeline(c: Caminhos, t: Timeline) -> None:
+    Timeline.model_validate(t.model_dump())
     c.timeline_json.write_text(
         t.model_dump_json(indent=2, exclude_none=True), encoding="utf-8"
     )

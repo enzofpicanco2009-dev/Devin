@@ -19,11 +19,12 @@ def carregar_catalogo() -> dict:
 
 
 def decidir_fixo(cena: Cena, template: str) -> Decisao:
+    """Modo fixo: o texto exibido é sempre `cena.texto` (editável na timeline); só o motor
+    por IA preenche `props_semanticas.texto` com um resumo próprio."""
     if cena.preenchimento:
-        return Decisao(template=TEMPLATE_PREENCHIMENTO, props_semanticas={"texto": ""}, origem="regra",
+        return Decisao(template=TEMPLATE_PREENCHIMENTO, props_semanticas={}, origem="regra",
                        justificativa="silêncio longo — tela de fundo")
-    return Decisao(template=template, props_semanticas={"texto": cena.texto, "enfase": "media"},
-                   origem="fixo")
+    return Decisao(template=template, props_semanticas={"enfase": "media"}, origem="fixo")
 
 
 def executar(projeto_id: str, force: bool = False) -> None:

@@ -4,7 +4,8 @@ from __future__ import annotations
 import subprocess
 import time
 
-from .comum import REMOTION, Caminhos, carregar_projeto, carregar_timeline, ffprobe, salvar_json, salvar_timeline
+from .comum import (REMOTION, Caminhos, carregar_projeto, carregar_timeline, ffprobe, salvar_json,
+                    salvar_timeline, sha256_obj)
 
 ETAPA = "m13"
 
@@ -35,13 +36,21 @@ def executar(projeto_id: str, force: bool = False, formato_id: str | None = None
     if not t.concluida("m12"):
         raise RuntimeError("m12 não concluída")
     formato = projeto.formato(formato_id)
+    if t.artefatos.get("m12") != formato.id:
+        raise RuntimeError(f"props finais são do formato {t.artefatos.get('m12')!r}; "
+                           f"rode `m12 --formato {formato.id}` antes")
     saida = c.video_mudo(formato.id)
-    if t.concluida(ETAPA) and saida.exists() and not force:
-        print(f"[{ETAPA}] já concluída (use --force para refazer)")
+    dados = timeline_para_remotion(t, formato)
+    chave = sha256_obj({"timeline": dados, "render": projeto.render.model_dump()})
+    chave_id = f"{ETAPA}:{formato.id}"
+    if t.artefatos.get(chave_id) == chave and saida.exists() and not force:
+        print(f"[{ETAPA}] já concluída para {formato.id} (use --force para refazer)")
+        t.marcar(ETAPA)
+        salvar_timeline(c, t)
         return
 
     props_path = c.timeline_render(formato.id)
-    salvar_json(props_path, timeline_para_remotion(t, formato))
+    salvar_json(props_path, dados)
 
     cmd = [
         "npx", "remotion", "render", "Video", str(saida),
@@ -67,5 +76,6 @@ def executar(projeto_id: str, force: bool = False, formato_id: str | None = None
         raise RuntimeError(f"Vídeo tem {frames} frames, esperado {esperado}")
 
     t.marcar(ETAPA)
+    t.artefatos[chave_id] = chave
     salvar_timeline(c, t)
     print(f"[{ETAPA}] ok: {frames} frames em {time.time() - inicio:.1f}s → {saida}")
