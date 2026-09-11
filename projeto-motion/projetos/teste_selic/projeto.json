@@ -28,7 +28,9 @@
     "modelo": "small"
   },
   "decisao": {
-    "provedor": "nenhum",
-    "template_fixo": "TituloImpacto"
+    "provedor": "ollama",
+    "modelo": null,
+    "temperatura": 0.3,
+    "template_fixo": null
   }
 }

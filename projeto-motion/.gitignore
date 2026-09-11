@@ -14,3 +14,4 @@ biblioteca/imagens/**/*.webp
 projetos/*/timeline.json
 projetos/*
 !projetos/teste_selic/
+remotion/public/projetos/
