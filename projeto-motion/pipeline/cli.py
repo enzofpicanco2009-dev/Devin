@@ -5,13 +5,13 @@ Comandos: m01 m04 m09 m12 m13 m14 run validar novo
 from __future__ import annotations
 
 import argparse
-import json
-import shutil
 import sys
+from pathlib import Path
 
 from . import (m01_transcrever, m04_estruturar_cenas, m09_motor_decisao,
                m12_aplicar_tema, m13_renderizar, m14_compor)
-from .comum import PROJETOS, Caminhos, carregar_timeline
+from .comum import Caminhos, carregar_timeline
+from .projetos import criar_projeto
 
 ORDEM = ["m01", "m04", "m09", "m12", "m13", "m14"]
 MODULOS = {
@@ -35,28 +35,11 @@ def cmd_validar(a):
 
 
 def cmd_novo(a):
-    raiz = PROJETOS / a.projeto
-    if raiz.exists():
-        sys.exit(f"Projeto já existe: {raiz}")
-    (raiz / "entrada").mkdir(parents=True)
-    audio_nome = "audio" + "".join(c for c in a.audio[a.audio.rfind("."):]) if a.audio else "audio.wav"
-    if a.audio:
-        shutil.copy(a.audio, raiz / "entrada" / audio_nome)
-    projeto = {
-        "schema_version": 1,
-        "id": a.projeto,
-        "canal_id": a.canal,
-        "titulo_trabalho": a.titulo or a.projeto,
-        "entrada": {"audio": f"entrada/{audio_nome}", "idioma": "pt"},
-        "formatos": [
-            {"id": "16x9", "largura": 1920, "altura": 1080, "fps": 30, "plataforma": "youtube"},
-            {"id": "9x16", "largura": 1080, "altura": 1920, "fps": 30, "plataforma": "shorts"},
-        ],
-        "formato_principal": "16x9",
-        "transcricao": {"modelo": a.modelo},
-        "decisao": {"provedor": "nenhum", "template_fixo": "TituloImpacto"},
-    }
-    (raiz / "projeto.json").write_text(json.dumps(projeto, ensure_ascii=False, indent=2), encoding="utf-8")
+    try:
+        raiz = criar_projeto(a.projeto, Path(a.audio) if a.audio else None, canal=a.canal,
+                             titulo=a.titulo, modelo=a.modelo, tema_id=a.tema, estilo_id=a.estilo)
+    except (FileExistsError, ValueError) as e:
+        sys.exit(str(e))
     print(f"Projeto criado em {raiz}. Coloque o áudio em entrada/ e rode: python -m pipeline run --projeto {a.projeto}")
 
 
@@ -76,6 +59,8 @@ def main(argv=None):
     n.add_argument("--audio", default=None, help="arquivo de áudio a copiar para entrada/")
     n.add_argument("--titulo", default=None)
     n.add_argument("--modelo", default="small")
+    n.add_argument("--tema", default=None, help="preset em config/temas/")
+    n.add_argument("--estilo", default=None, help="preset em config/estilos/")
 
     a = p.parse_args(argv)
     if a.cmd == "novo":

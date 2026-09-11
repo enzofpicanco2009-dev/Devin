@@ -11,11 +11,21 @@ Plano de arquitetura completo: `docs/plano_arquitetura.md`.
 - `pip install -r requirements.txt` (em um venv)
 - `cd remotion && npm install`
 
-## Uso
+## Uso pelo navegador (recomendado)
+
+```bash
+.venv/bin/python -m app          # abre em http://localhost:8000
+```
+
+Envie o áudio, escolha o **design** (`config/temas/`), o **ritmo** (`config/estilos/`) e os
+formatos, clique em *Gerar vídeo* e acompanhe o progresso. Os vídeos ficam em "Meus vídeos"
+(pasta `projetos/<id>/saida/`). Para adicionar um design novo, basta criar um JSON em `config/temas/`.
+
+## Uso pela linha de comando
 
 ```bash
 # 1. cria a pasta do projeto (projetos/<id>/) e coloca o áudio em entrada/
-python -m pipeline novo --projeto meu_video --canal canal_exemplo
+python -m pipeline novo --projeto meu_video --canal canal_exemplo --tema tema_neon_tech --estilo estilo_dinamico
 cp narracao.wav projetos/meu_video/entrada/audio.wav
 
 # 2. roda tudo (m01 → m04 → m09 → m12 → m13 → m14)

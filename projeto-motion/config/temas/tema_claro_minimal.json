@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "id": "tema_claro_minimal",
+  "nome": "Claro Minimal",
+  "descricao": "Limpo e corporativo. Fundo branco, texto preto, azul de destaque.",
+  "cores": {
+    "fundo": "#FAFAFA",
+    "fundo_secundario": "#EFEFEF",
+    "texto": "#111111",
+    "texto_secundario": "#555555",
+    "destaque": "#1E6FE8",
+    "destaque_2": "#00A896",
+    "positivo": "#2ECC71",
+    "negativo": "#E74C3C",
+    "neutro": "#95A5A6"
+  },
+  "tipografia": {
+    "fonte_titulo": {
+      "familia": "Inter, Arial, sans-serif",
+      "peso": 700
+    }
+  }
+}

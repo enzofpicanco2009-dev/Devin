@@ -11,3 +11,6 @@ biblioteca/imagens/**/*.jpg
 biblioteca/imagens/**/*.jpeg
 biblioteca/imagens/**/*.webp
 !biblioteca/imagens/**/catalogo.json
+projetos/*/timeline.json
+projetos/*
+!projetos/teste_selic/

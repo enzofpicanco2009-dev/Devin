@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Motion Studio</title>
+<link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+<header class="topo">
+  <div class="marca"><span class="logo"></span> Motion Studio</div>
+  <nav>
+    <button class="link ativo" data-tela="novo">Novo vídeo</button>
+    <button class="link" data-tela="biblioteca">Meus vídeos</button>
+  </nav>
+</header>
+
+<main>
+  <!-- ======== TELA: NOVO VÍDEO ======== -->
+  <section id="tela-novo" class="tela">
+    <h1>Transforme sua narração em vídeo</h1>
+    <p class="sub">Envie o áudio, escolha o visual e receba o vídeo pronto. Sem timeline, sem editor.</p>
+
+    <form id="form" class="passos">
+      <!-- Passo 1 -->
+      <div class="passo">
+        <div class="passo-cab"><span class="num">1</span><h2>Áudio da narração</h2></div>
+        <label id="drop" class="drop">
+          <input type="file" id="audio" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac,.opus,.mp4,.webm" hidden />
+          <div class="drop-vazio">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12m0-12 4 4m-4-4-4 4M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/></svg>
+            <strong>Arraste o áudio aqui</strong>
+            <span>ou clique para escolher · MP3, WAV, M4A…</span>
+          </div>
+          <div class="drop-cheio" hidden>
+            <div class="onda"></div>
+            <div class="arq"><strong id="arq-nome"></strong><span id="arq-info"></span></div>
+            <button type="button" class="trocar" id="trocar">Trocar</button>
+          </div>
+        </label>
+        <input type="text" id="titulo" class="campo" placeholder="Nome do vídeo (opcional)" maxlength="80" />
+      </div>
+
+      <!-- Passo 2 -->
+      <div class="passo">
+        <div class="passo-cab"><span class="num">2</span><h2>Design</h2></div>
+        <div id="temas" class="cards temas"></div>
+      </div>
+
+      <!-- Passo 3 -->
+      <div class="passo">
+        <div class="passo-cab"><span class="num">3</span><h2>Ritmo da edição</h2></div>
+        <div id="estilos" class="cards estilos"></div>
+      </div>
+
+      <!-- Passo 4 -->
+      <div class="passo">
+        <div class="passo-cab"><span class="num">4</span><h2>Onde vai publicar</h2></div>
+        <div id="formatos" class="chips"></div>
+        <details class="avancado">
+          <summary>Opções avançadas</summary>
+          <label>Qualidade da transcrição
+            <select id="modelo">
+              <option value="tiny">Rápida (tiny)</option>
+              <option value="base">Boa (base)</option>
+              <option value="small" selected>Ótima (small) — recomendado</option>
+              <option value="medium">Máxima (medium, lento)</option>
+            </select>
+          </label>
+        </details>
+      </div>
+
+      <div class="acao">
+        <button type="submit" id="gerar" class="btn-principal" disabled>Gerar vídeo</button>
+        <span id="erro-form" class="erro"></span>
+      </div>
+    </form>
+  </section>
+
+  <!-- ======== TELA: PROGRESSO / RESULTADO ======== -->
+  <section id="tela-progresso" class="tela" hidden>
+    <a href="#" class="voltar" data-tela="novo">← Novo vídeo</a>
+    <h1 id="prog-titulo"></h1>
+    <p class="sub" id="prog-sub"></p>
+
+    <ol id="etapas" class="etapas"></ol>
+    <pre id="log" class="log" hidden></pre>
+    <div id="prog-erro" class="erro-box" hidden></div>
+
+    <div id="resultado" class="resultado" hidden></div>
+  </section>
+
+  <!-- ======== TELA: BIBLIOTECA ======== -->
+  <section id="tela-biblioteca" class="tela" hidden>
+    <h1>Meus vídeos</h1>
+    <p class="sub">Tudo que já foi gerado nesta máquina.</p>
+    <div id="lista" class="lista"></div>
+  </section>
+</main>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

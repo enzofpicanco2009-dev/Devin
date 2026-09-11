@@ -50,6 +50,8 @@ class Projeto(BaseModel):
     entrada: Entrada
     formatos: list[Formato]
     formato_principal: str
+    tema_id: Optional[str] = None     # preset em config/temas/; None = padrão do canal
+    estilo_id: Optional[str] = None   # preset em config/estilos/; None = padrão do canal
     overrides: dict = Field(default_factory=dict)
     render: RenderConfig = Field(default_factory=RenderConfig)
     transcricao: TranscricaoConfig = Field(default_factory=TranscricaoConfig)
@@ -96,6 +98,8 @@ class TemplatesEstilo(BaseModel):
 class Estilo(BaseModel):
     schema_version: int = 1
     id: str
+    nome: str = ""
+    descricao: str = ""
     ritmo: Ritmo = Field(default_factory=Ritmo)
     animacao: Animacao = Field(default_factory=Animacao)
     templates: TemplatesEstilo = Field(default_factory=TemplatesEstilo)
@@ -146,6 +150,8 @@ class SafeArea(BaseModel):
 class Tema(BaseModel):
     schema_version: int = 1
     id: str
+    nome: str = ""
+    descricao: str = ""
     cores: Cores = Field(default_factory=Cores)
     tipografia: Tipografia = Field(default_factory=Tipografia)
     safe_areas: dict[str, SafeArea] = Field(

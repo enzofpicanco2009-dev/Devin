@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "id": "estilo_shorts",
+  "nome": "Shorts",
+  "descricao": "Cenas de 1,5–3s, tudo grande, ritmo frenético.",
+  "ritmo": {
+    "duracao_cena_min_s": 1.0,
+    "duracao_cena_max_s": 3.5,
+    "duracao_cena_alvo_s": 2.0,
+    "pausa_corte_s": 0.25
+  },
+  "animacao": {
+    "velocidade": 1.8,
+    "entrada_frames": 8,
+    "saida_frames": 6
+  },
+  "densidade_visual": "alta"
+}
