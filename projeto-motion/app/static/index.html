@@ -41,21 +41,61 @@
         <input type="text" id="titulo" class="campo" placeholder="Nome do vídeo (opcional)" maxlength="80" />
       </div>
 
-      <!-- Passo 2 -->
+      <!-- Passo 2: canal -->
       <div class="passo">
-        <div class="passo-cab"><span class="num">2</span><h2>Design</h2></div>
-        <div id="temas" class="cards temas"></div>
+        <div class="passo-cab"><span class="num">2</span><h2>Para qual canal?</h2></div>
+        <p class="dica">O canal é um preset: guarda o design padrão, o público e a chamada final.</p>
+        <div id="canais" class="cards canais"></div>
+        <details id="novo-canal" class="avancado">
+          <summary>+ Criar novo canal</summary>
+          <div class="grade-canal">
+            <input type="text" id="nc-nome" class="campo" placeholder="Nome do canal" maxlength="60" />
+            <input type="text" id="nc-publico" class="campo" placeholder="Público (ex.: iniciantes em investimentos)" maxlength="120" />
+            <input type="text" id="nc-cta" class="campo" placeholder="Chamada final (ex.: Inscreva-se)" maxlength="80" />
+            <select id="nc-tom" class="campo">
+              <option value="direto">Tom direto</option>
+              <option value="descontraído">Tom descontraído</option>
+              <option value="formal">Tom formal</option>
+              <option value="inspirador">Tom inspirador</option>
+            </select>
+            <button type="button" id="nc-criar" class="btn">Criar canal com o design escolhido abaixo</button>
+            <span id="nc-erro" class="erro"></span>
+          </div>
+        </details>
       </div>
 
-      <!-- Passo 3 -->
+      <!-- Passo 3: design -->
       <div class="passo">
-        <div class="passo-cab"><span class="num">3</span><h2>Ritmo da edição</h2></div>
+        <div class="passo-cab"><span class="num">3</span><h2>Design</h2></div>
+        <p class="dica">Comece por um tema pronto. Depois, se quiser, troque a paleta de cores e a fonte.</p>
+        <div id="temas" class="cards temas"></div>
+        <h3 class="sub-h">Paleta de cores <small>(opcional — substitui as cores do tema)</small></h3>
+        <div id="paletas" class="paletas"></div>
+        <h3 class="sub-h">Fonte <small>(opcional)</small></h3>
+        <div id="fontes" class="fontes"></div>
+        <div class="amostra" id="amostra"><span class="am-titulo">A Selic <em>define</em> tudo</span><span class="am-num">13,75%</span></div>
+      </div>
+
+      <!-- Passo 4: ritmo -->
+      <div class="passo">
+        <div class="passo-cab"><span class="num">4</span><h2>Ritmo da edição</h2></div>
         <div id="estilos" class="cards estilos"></div>
       </div>
 
-      <!-- Passo 4 -->
+      <!-- Passo 5: imagens -->
       <div class="passo">
-        <div class="passo-cab"><span class="num">4</span><h2>Onde vai publicar</h2></div>
+        <div class="passo-cab"><span class="num">5</span><h2>Imagens deste vídeo <small>(opcional)</small></h2></div>
+        <p class="dica">Logos, fotos, prints. Marque com palavras-chave: quando a narração falar delas, a imagem entra na cena.</p>
+        <label class="drop drop-img">
+          <input type="file" id="imagens" accept="image/*" multiple hidden />
+          <strong>Arraste imagens aqui</strong><span>ou clique para escolher · PNG, JPG, WEBP, SVG</span>
+        </label>
+        <div id="lista-imagens" class="lista-imagens"></div>
+      </div>
+
+      <!-- Passo 6: publicar -->
+      <div class="passo">
+        <div class="passo-cab"><span class="num">6</span><h2>Onde vai publicar</h2></div>
         <div id="formatos" class="chips"></div>
         <details class="avancado">
           <summary>Opções avançadas</summary>
@@ -67,6 +107,7 @@
               <option value="medium">Máxima (medium, lento)</option>
             </select>
           </label>
+          <label class="linha-check"><input type="checkbox" id="usar-ia" checked /> <span id="ia-rotulo">Roteiro visual com IA local (Ollama)</span></label>
         </details>
       </div>
 
@@ -85,6 +126,12 @@
 
     <ol id="etapas" class="etapas"></ol>
     <pre id="log" class="log" hidden></pre>
+
+    <section id="ao-vivo" class="ao-vivo" hidden>
+      <div class="av-cab"><h2>Produção ao vivo</h2><span id="av-modo" class="tag"></span></div>
+      <p class="dica" id="av-dica"></p>
+      <div id="storyboard" class="storyboard"></div>
+    </section>
     <div id="prog-erro" class="erro-box" hidden></div>
 
     <div id="resultado" class="resultado" hidden></div>

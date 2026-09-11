@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import subprocess
 import time
+from pathlib import Path
 
 from .comum import (REMOTION, Caminhos, carregar_projeto, carregar_timeline, ffprobe, salvar_json,
                     salvar_timeline, sha256_obj)
@@ -75,7 +76,27 @@ def executar(projeto_id: str, force: bool = False, formato_id: str | None = None
     if abs(frames - esperado) > 1:
         raise RuntimeError(f"Vídeo tem {frames} frames, esperado {esperado}")
 
+    print(f"[{ETAPA}] ok: {frames} frames em {time.time() - inicio:.1f}s → {saida}")
+    extrair_previews(c, t, formato.id)
     t.marcar(ETAPA)
     t.artefatos[chave_id] = chave
     salvar_timeline(c, t)
-    print(f"[{ETAPA}] ok: {frames} frames em {time.time() - inicio:.1f}s → {saida}")
+
+
+def pasta_previews(c: Caminhos, formato_id: str) -> Path:
+    return c.cache / f"previews_{formato_id}"
+
+
+def extrair_previews(c: Caminhos, t, formato_id: str) -> None:
+    """Um frame (meio da cena) por cena, para o storyboard da interface."""
+    pasta = pasta_previews(c, formato_id)
+    pasta.mkdir(exist_ok=True)
+    for antigo in pasta.glob("*.jpg"):
+        antigo.unlink()
+    video = c.video_mudo(formato_id)
+    for cena in t.cenas:
+        meio = (cena.render_start_s + cena.render_end_s) / 2
+        subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-ss", f"{meio:.3f}", "-i", str(video),
+                        "-frames:v", "1", "-vf", "scale=480:-2", "-q:v", "4", str(pasta / f"{cena.id}.jpg")],
+                       check=False)
+    print(f"[{ETAPA}] previews: {len(t.cenas)} cenas em {pasta.name}/")

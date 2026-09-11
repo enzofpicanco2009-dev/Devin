@@ -1,7 +1,8 @@
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 
-const estado = { audio: null, tema: null, estilo: null, formatos: new Set(["16x9"]), opcoes: null, poll: null };
+const estado = { audio: null, canal: null, tema: null, estilo: null, paleta: null, fonte: null,
+  imagens: [], formatos: new Set(["16x9"]), opcoes: null, poll: null };
 
 // ---------- navegação ----------
 function mostrar(tela) {
@@ -19,7 +20,20 @@ document.addEventListener("click", (e) => {
 // ---------- opções (temas, estilos, formatos) ----------
 async function carregarOpcoes() {
   estado.opcoes = await (await fetch("/api/opcoes")).json();
-  const { temas, estilos, formatos } = estado.opcoes;
+  const { temas, estilos, formatos, paletas, fontes, ia } = estado.opcoes;
+
+  renderCanais();
+
+  $("#paletas").innerHTML = `<button type="button" class="paleta sel" data-id=""><span class="sw auto"></span><small>Do tema</small></button>` +
+    paletas.map((p) => `<button type="button" class="paleta" data-id="${p.id}" title="${p.nome}">
+      <span class="sw" style="background:${p.cores.fundo}"><i style="background:${p.cores.destaque}"></i><i style="background:${p.cores.destaque_2}"></i><i style="background:${p.cores.texto}"></i></span><small>${p.nome}</small></button>`).join("");
+  $("#fontes").innerHTML = `<button type="button" class="fonte sel" data-id=""><span>Aa</span><small>Do tema</small></button>` +
+    fontes.map((f) => `<button type="button" class="fonte" data-id="${f.id}" style="font-family:${f.familia};font-weight:${f.peso}"><span>Aa</span><small>${f.nome}</small></button>`).join("");
+  $("#paletas").addEventListener("click", (e) => { const b = e.target.closest(".paleta"); if (b) { estado.paleta = b.dataset.id || null; $$("#paletas .paleta").forEach((x) => x.classList.toggle("sel", x === b)); amostra(); } });
+  $("#fontes").addEventListener("click", (e) => { const b = e.target.closest(".fonte"); if (b) { estado.fonte = b.dataset.id || null; $$("#fontes .fonte").forEach((x) => x.classList.toggle("sel", x === b)); amostra(); } });
+
+  if (!ia.disponivel) { $("#usar-ia").checked = false; $("#ia-rotulo").textContent = "IA local (Ollama) não encontrada — o roteiro será feito por regras"; }
+  else $("#ia-rotulo").textContent = `Roteiro visual com IA local (${ia.modelo})`;
 
   $("#temas").innerHTML = temas.map((t) => {
     const c = t.cores, f = t.tipografia?.fonte_titulo || {};
@@ -46,11 +60,11 @@ async function carregarOpcoes() {
       <span class="fmt f${f.id}"></span><span>${f.nome}<small>${f.descricao}</small></span>
     </button>`).join("");
 
-  selecionar("tema", temas[0]?.id);
-  selecionar("estilo", estilos[0]?.id);
+  selecionarCanal(estado.opcoes.canais[0]?.id);
 
-  $("#temas").addEventListener("click", (e) => { const c = e.target.closest(".card"); if (c) selecionar("tema", c.dataset.id); });
+  $("#temas").addEventListener("click", (e) => { const c = e.target.closest(".card"); if (c) { selecionar("tema", c.dataset.id); amostra(); } });
   $("#estilos").addEventListener("click", (e) => { const c = e.target.closest(".card"); if (c) selecionar("estilo", c.dataset.id); });
+  $("#canais").addEventListener("click", (e) => { const c = e.target.closest(".card"); if (c) selecionarCanal(c.dataset.id); });
   $("#formatos").addEventListener("click", (e) => {
     const c = e.target.closest(".chip"); if (!c) return;
     if (estado.formatos.has(c.dataset.id)) { if (estado.formatos.size > 1) estado.formatos.delete(c.dataset.id); }
@@ -62,6 +76,80 @@ function selecionar(tipo, id) {
   estado[tipo] = id;
   $$(`#${tipo}s .card`).forEach((c) => c.classList.toggle("sel", c.dataset.id === id));
 }
+
+// ---------- canais (presets) ----------
+function renderCanais() {
+  $("#canais").innerHTML = estado.opcoes.canais.map((c) => {
+    const tema = estado.opcoes.temas.find((t) => t.id === c.tema_padrao);
+    const cores = c.cores || tema?.cores || {};
+    return `<button type="button" class="card" data-id="${c.id}">
+      <div class="previa canal-previa" style="background:${cores.fundo || "#111"};color:${cores.texto || "#fff"}"><span style="color:${cores.destaque || "#fc4"}">${escapar(c.nome.slice(0, 1).toUpperCase())}</span></div>
+      <div class="info"><strong>${escapar(c.nome)}</strong><small>${escapar(c.dna?.publico || tema?.nome || "")}</small></div>
+    </button>`;
+  }).join("");
+}
+function selecionarCanal(id) {
+  const c = estado.opcoes.canais.find((x) => x.id === id);
+  if (!c) return;
+  estado.canal = id;
+  $$("#canais .card").forEach((x) => x.classList.toggle("sel", x.dataset.id === id));
+  // herda o design do canal; o usuário pode trocar depois só para este vídeo
+  selecionar("tema", c.tema_padrao);
+  selecionar("estilo", c.estilo_padrao);
+  estado.paleta = c.paleta_id || null; estado.fonte = c.fonte_id || null;
+  $$("#paletas .paleta").forEach((x) => x.classList.toggle("sel", (x.dataset.id || null) === estado.paleta));
+  $$("#fontes .fonte").forEach((x) => x.classList.toggle("sel", (x.dataset.id || null) === estado.fonte));
+  amostra();
+}
+$("#nc-criar").addEventListener("click", async () => {
+  const nome = $("#nc-nome").value.trim();
+  $("#nc-erro").textContent = "";
+  if (!nome) { $("#nc-erro").textContent = "Dê um nome ao canal."; return; }
+  const fd = new FormData();
+  fd.append("nome", nome); fd.append("publico", $("#nc-publico").value); fd.append("cta", $("#nc-cta").value);
+  fd.append("tom", $("#nc-tom").value); fd.append("tema_id", estado.tema); fd.append("estilo_id", estado.estilo);
+  fd.append("paleta_id", estado.paleta || ""); fd.append("fonte_id", estado.fonte || "");
+  const r = await fetch("/api/canais", { method: "POST", body: fd });
+  if (!r.ok) { $("#nc-erro").textContent = (await r.json()).detail || r.statusText; return; }
+  const canal = await r.json();
+  estado.opcoes.canais.push(canal);
+  renderCanais(); selecionarCanal(canal.id);
+  $("#novo-canal").open = false; $("#nc-nome").value = "";
+});
+
+// ---------- amostra do design ----------
+function amostra() {
+  const tema = estado.opcoes.temas.find((t) => t.id === estado.tema);
+  const pal = estado.opcoes.paletas.find((p) => p.id === estado.paleta);
+  const fon = estado.opcoes.fontes.find((f) => f.id === estado.fonte);
+  const c = { ...(tema?.cores || {}), ...(pal?.cores || {}) };
+  const ft = fon || { familia: tema?.tipografia?.fonte_titulo?.familia || "Inter", peso: tema?.tipografia?.fonte_titulo?.peso || 800 };
+  const el = $("#amostra");
+  el.style.background = c.fundo; el.style.color = c.texto; el.style.fontFamily = ft.familia; el.style.fontWeight = ft.peso;
+  $("em", el).style.color = c.destaque; $(".am-num", el).style.color = c.destaque_2;
+}
+
+// ---------- imagens do projeto ----------
+const inputImg = $("#imagens"), dropImg = $(".drop-img");
+["dragenter", "dragover"].forEach((ev) => dropImg.addEventListener(ev, (e) => { e.preventDefault(); dropImg.classList.add("sobre"); }));
+["dragleave", "drop"].forEach((ev) => dropImg.addEventListener(ev, (e) => { e.preventDefault(); dropImg.classList.remove("sobre"); }));
+dropImg.addEventListener("drop", (e) => addImagens(e.dataTransfer.files));
+inputImg.addEventListener("change", () => { addImagens(inputImg.files); inputImg.value = ""; });
+function addImagens(files) {
+  for (const f of files) if (f.type.startsWith("image/") || /\.svg$/i.test(f.name))
+    estado.imagens.push({ file: f, url: URL.createObjectURL(f), tags: f.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " "), descricao: "" });
+  renderImagens();
+}
+function renderImagens() {
+  $("#lista-imagens").innerHTML = estado.imagens.map((im, i) => `
+    <div class="img-item">
+      <img src="${im.url}" alt="" />
+      <input type="text" class="campo" data-i="${i}" value="${escapar(im.tags)}" placeholder="palavras-chave, separadas por vírgula" />
+      <button type="button" class="x" data-rm="${i}" title="Remover">×</button>
+    </div>`).join("");
+}
+$("#lista-imagens").addEventListener("input", (e) => { const i = e.target.dataset.i; if (i !== undefined) estado.imagens[+i].tags = e.target.value; });
+$("#lista-imagens").addEventListener("click", (e) => { const b = e.target.closest("[data-rm]"); if (b) { estado.imagens.splice(+b.dataset.rm, 1); renderImagens(); } });
 
 // ---------- áudio ----------
 const drop = $("#drop"), inputAudio = $("#audio");
@@ -95,10 +183,16 @@ $("#form").addEventListener("submit", async (e) => {
   const fd = new FormData();
   fd.append("audio", estado.audio);
   fd.append("titulo", $("#titulo").value);
+  fd.append("canal_id", estado.canal);
   fd.append("tema_id", estado.tema);
   fd.append("estilo_id", estado.estilo);
+  fd.append("paleta_id", estado.paleta || "");
+  fd.append("fonte_id", estado.fonte || "");
   fd.append("formatos", [...estado.formatos].join(","));
   fd.append("modelo", $("#modelo").value);
+  fd.append("usar_ia", $("#usar-ia").checked ? "true" : "false");
+  for (const im of estado.imagens) fd.append("imagens", im.file, im.file.name);
+  fd.append("imagens_meta", JSON.stringify(estado.imagens.map((im) => ({ tags: im.tags, descricao: im.descricao }))));
   try {
     const r = await fetch("/api/projetos", { method: "POST", body: fd });
     if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
@@ -114,7 +208,7 @@ $("#form").addEventListener("submit", async (e) => {
 // ---------- progresso / resultado ----------
 function abrirProjeto(id) {
   mostrar("progresso");
-  $("#resultado").hidden = true; $("#prog-erro").hidden = true; $("#log").hidden = true;
+  $("#resultado").hidden = true; $("#prog-erro").hidden = true; $("#log").hidden = true; $("#ao-vivo").hidden = true;
   atualizar(id);
   estado.poll = setInterval(() => atualizar(id), 1500);
 }
@@ -141,6 +235,8 @@ async function atualizar(id) {
   if (p.estado === "rodando" && p.log.length) { $("#log").hidden = false; $("#log").textContent = p.log.join("\n"); }
   else $("#log").hidden = true;
 
+  renderAoVivo(p);
+
   if (p.estado === "erro") {
     clearInterval(estado.poll); estado.poll = null;
     $("#prog-erro").hidden = false;
@@ -158,6 +254,37 @@ async function atualizar(id) {
   }
   if (p.estado !== "rodando" && estado.poll) { clearInterval(estado.poll); estado.poll = null; }
 }
+// ---------- demonstração ao vivo ----------
+function renderAoVivo(p) {
+  const av = p.ao_vivo;
+  if (!av) { $("#ao-vivo").hidden = true; return; }
+  $("#ao-vivo").hidden = false;
+  const modo = { ia: `IA local · ${av.modelo || ""}`, regras: "Roteiro por regras", fixo: "Template fixo" }[av.modo] || av.modo;
+  $("#av-modo").textContent = av.status === "pensando" ? `${modo} — lendo a transcrição…` : modo;
+  $("#av-dica").textContent = av.status === "pensando"
+    ? "A IA está lendo a narração inteira, dividindo em ideias e decidindo o que aparece em cada cena."
+    : `${av.cenas.length} cenas. O texto falado não vai para a tela: cada cena mostra o que a IA escreveu para ela.`;
+  const nomes = Object.fromEntries((estado.opcoes?.templates || []).map((t) => [t.id, t]));
+  const renderizando = p.etapa === "m13";
+  $("#storyboard").innerHTML = av.cenas.map((c, i) => `
+    <div class="sb-cena ${c.preview ? "pronta" : ""}">
+      <div class="sb-th">${c.preview ? `<img src="${c.preview}&t=${Date.now()}" alt="" />`
+        : `<div class="sb-vazio ${renderizando ? "pulsa" : ""}"><span>${escapar(templateNome(c.template))}</span>${renderizando ? "<small>renderizando…</small>" : ""}</div>`}</div>
+      <div class="sb-info">
+        <div class="sb-linha"><span class="sb-n">${i + 1}</span><span class="sb-t">${fmtTempo(c.inicio)} – ${fmtTempo(c.fim)}</span><span class="tag mini" title="${escapar(nomes[c.template]?.descricao || "")}">${escapar(templateNome(c.template))}</span></div>
+        <strong class="sb-tela">${escapar(c.tela || "")}</strong>
+        ${c.por_que ? `<small class="sb-pq">${escapar(c.por_que)}</small>` : ""}
+        <details class="sb-fala"><summary>Fala original</summary>${escapar(c.fala || "")}</details>
+      </div>
+    </div>`).join("");
+}
+function templateNome(id) {
+  return ({ TituloImpacto: "Título de impacto", Pergunta: "Pergunta", Citacao: "Citação", NumeroDestaque: "Número em destaque",
+    ComparacaoDoisLados: "Comparação", GraficoBarras: "Gráfico de barras", SetaTendencia: "Seta de tendência",
+    ImagemDestaque: "Imagem em destaque", ListaAnimada: "Lista animada", FundoVazio: "Fundo" })[id] || id;
+}
+function fmtTempo(s) { const m = Math.floor(s / 60); return `${m}:${String(Math.floor(s % 60)).padStart(2, "0")}`; }
+
 window.regerar = async (id) => { await fetch(`/api/projetos/${id}/gerar`, { method: "POST" }); abrirProjeto(id); };
 function rotuloFormato(f) { return estado.opcoes?.formatos.find((x) => x.id === f)?.nome ?? f; }
 function escapar(s) { return s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c])); }

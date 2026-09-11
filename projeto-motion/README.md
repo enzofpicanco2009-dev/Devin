@@ -21,6 +21,18 @@ Envie o áudio, escolha o **design** (`config/temas/`), o **ritmo** (`config/est
 formatos, clique em *Gerar vídeo* e acompanhe o progresso. Os vídeos ficam em "Meus vídeos"
 (pasta `projetos/<id>/saida/`). Para adicionar um design novo, basta criar um JSON em `config/temas/`.
 
+Na tela inicial você também escolhe o **canal** (preset com público, CTA e design padrão — crie novos
+pela própria interface, ficam em `config/canais/`), troca **paleta de cores e fonte** por cima do tema,
+e envia **imagens do vídeo** com palavras-chave (entram na cena quando a narração fala delas).
+Durante a produção, o painel *Produção ao vivo* mostra o roteiro cena a cena e o frame renderizado de cada uma.
+
+### Roteiro com IA local (opcional)
+
+Instale o [Ollama](https://ollama.com) e baixe um modelo (`ollama pull qwen2.5:7b`). Com ele rodando,
+a etapa de roteiro lê a transcrição inteira, divide em ideias e decide o que aparece em cada cena
+(título, número, gráfico, seta, comparação, imagem…). O texto falado **não** vai para a tela.
+Sem Ollama (ou desmarcando "usar IA" em Opções avançadas) o roteiro é feito por regras.
+
 ## Uso pela linha de comando
 
 ```bash

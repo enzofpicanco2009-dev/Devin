@@ -39,6 +39,8 @@ def criar_projeto(
     tema_id: str | None = None,
     estilo_id: str | None = None,
     formato_principal: str | None = None,
+    overrides_tema: dict | None = None,
+    usar_ia: bool = True,
 ) -> Path:
     if not ID_PROJETO_RE.match(projeto_id):
         raise ValueError(f"ID de projeto inválido: {projeto_id!r}")
@@ -70,7 +72,9 @@ def criar_projeto(
         "tema_id": tema_id,
         "estilo_id": estilo_id,
         "transcricao": {"modelo": modelo},
-        "decisao": {"provedor": "nenhum", "template_fixo": "TituloImpacto"},
+        "overrides": {"tema": overrides_tema} if overrides_tema else {},
+        "decisao": ({"provedor": "ollama", "template_fixo": None} if usar_ia
+                    else {"provedor": "nenhum", "template_fixo": None}),
     }
     (raiz / "projeto.json").write_text(json.dumps(projeto, ensure_ascii=False, indent=2), encoding="utf-8")
     return raiz
@@ -84,7 +88,7 @@ def listar_projetos() -> list[dict]:
         except json.JSONDecodeError:
             continue
         finais = {f["id"]: (p.parent / "saida" / f"final_{f['id']}.mp4").exists() for f in d["formatos"]}
-        saida.append({"id": d["id"], "titulo": d.get("titulo_trabalho", d["id"]),
+        saida.append({"id": d["id"], "titulo": d.get("titulo_trabalho", d["id"]), "canal_id": d.get("canal_id"),
                       "tema_id": d.get("tema_id"), "estilo_id": d.get("estilo_id"),
                       "formatos": finais, "criado_em": p.stat().st_mtime})
     return saida
