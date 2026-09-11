@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "id": "canal_exemplo",
+  "nome": "Canal Exemplo",
+  "idioma": "pt-BR",
+  "dna": {
+    "tom": "direto",
+    "humor": 0.2,
+    "seriedade": 0.8,
+    "formalidade": 0.6,
+    "ritmo_base": "medio",
+    "publico": "adultos interessados em aprender",
+    "elementos_proibidos": ["emoji", "meme"],
+    "elementos_caracteristicos": ["numero_grande", "grafico_barra"],
+    "palavras_proibidas": [],
+    "cta_padrao": "Inscreva-se para mais"
+  },
+  "tema_padrao": "tema_escuro_dourado",
+  "estilo_padrao": "estilo_didatico",
+  "metadados_obrigatorios": ["titulo", "descricao", "tags"]
+}

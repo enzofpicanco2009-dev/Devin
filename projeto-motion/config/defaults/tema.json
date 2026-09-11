@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "id": "tema_escuro_dourado",
+  "cores": {
+    "fundo": "#0D0D0D",
+    "fundo_secundario": "#1A1A1A",
+    "texto": "#FFFFFF",
+    "texto_secundario": "#B3B3B3",
+    "destaque": "#F5C042",
+    "destaque_2": "#42A5F5",
+    "positivo": "#2ECC71",
+    "negativo": "#E74C3C",
+    "neutro": "#95A5A6"
+  },
+  "tipografia": {
+    "fonte_titulo": { "familia": "Inter, Arial, sans-serif", "peso": 800 },
+    "fonte_corpo": { "familia": "Inter, Arial, sans-serif", "peso": 500 },
+    "fonte_numero": { "familia": "JetBrains Mono, monospace", "peso": 700 },
+    "escala": { "titulo_max": 96, "titulo_min": 48, "corpo": 40, "numero": 160, "legenda": 36 },
+    "max_linhas_titulo": 3,
+    "max_caracteres_linha": 28
+  },
+  "safe_areas": {
+    "16x9": { "topo": 5, "base": 8, "lados": 6 },
+    "9x16": { "topo": 12, "base": 20, "lados": 6 },
+    "1x1": { "topo": 8, "base": 8, "lados": 6 }
+  }
+}

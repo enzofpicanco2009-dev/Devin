@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "id": "estilo_didatico",
+  "ritmo": {
+    "duracao_cena_min_s": 1.5,
+    "duracao_cena_max_s": 8.0,
+    "duracao_cena_alvo_s": 4.0,
+    "pausa_corte_s": 0.4,
+    "pausa_interna_min_s": 0.15,
+    "gap_max_s": 3.0,
+    "fundir_curtas": true
+  },
+  "animacao": {
+    "velocidade": 1.0,
+    "entrada_frames": 15,
+    "saida_frames": 10,
+    "spring": { "damping": 200, "stiffness": 100, "mass": 1 }
+  },
+  "templates": {
+    "preferidos": ["TituloImpacto"],
+    "proibidos": [],
+    "max_repeticao_consecutiva": 2,
+    "peso_variedade": 0.5
+  },
+  "densidade_visual": "media"
+}

@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "canal_id": "canal_exemplo",
+  "imagens": [
+    {
+      "id": "exemplo_logo_bc",
+      "arquivo": "logo_banco_central.png",
+      "tipo": "logo",
+      "tags": ["banco central", "bc", "bacen", "selic"],
+      "uso": "livre",
+      "credito": "",
+      "foco": { "x": 0.5, "y": 0.5 },
+      "cor_dominante": "#1B4F72",
+      "sem_fundo": true,
+      "descricao": "Exemplo de ficha. Substitua pelo arquivo real em biblioteca/imagens/canal_exemplo/."
+    }
+  ]
+}
