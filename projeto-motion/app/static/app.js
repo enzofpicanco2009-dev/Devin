@@ -266,6 +266,7 @@ function renderAoVivo(p) {
     : `${av.cenas.length} cenas. O texto falado não vai para a tela: cada cena mostra o que a IA escreveu para ela.`;
   const nomes = Object.fromEntries((estado.opcoes?.templates || []).map((t) => [t.id, t]));
   const renderizando = p.etapa === "m13";
+  const abertas = new Set($$("#storyboard .sb-fala[open]").map((d) => d.dataset.i));
   $("#storyboard").innerHTML = av.cenas.map((c, i) => `
     <div class="sb-cena ${c.preview ? "pronta" : ""}">
       <div class="sb-th">${c.preview ? `<img src="${c.preview}&t=${Date.now()}" alt="" />`
@@ -274,12 +275,12 @@ function renderAoVivo(p) {
         <div class="sb-linha"><span class="sb-n">${i + 1}</span><span class="sb-t">${fmtTempo(c.inicio)} – ${fmtTempo(c.fim)}</span><span class="tag mini" title="${escapar(nomes[c.template]?.descricao || "")}">${escapar(templateNome(c.template))}</span></div>
         <strong class="sb-tela">${escapar(c.tela || "")}</strong>
         ${c.por_que ? `<small class="sb-pq">${escapar(c.por_que)}</small>` : ""}
-        <details class="sb-fala"><summary>Fala original</summary>${escapar(c.fala || "")}</details>
+        <details class="sb-fala" data-i="${i}" ${abertas.has(String(i)) ? "open" : ""}><summary>Fala original</summary>${escapar(c.fala || "")}</details>
       </div>
     </div>`).join("");
 }
 function templateNome(id) {
-  return ({ TituloImpacto: "Título de impacto", Pergunta: "Pergunta", Citacao: "Citação", NumeroDestaque: "Número em destaque",
+  return ({ TextoCorrido: "Texto resumido", TituloImpacto: "Título de impacto", Pergunta: "Pergunta", Citacao: "Citação", NumeroDestaque: "Número em destaque",
     ComparacaoDoisLados: "Comparação", GraficoBarras: "Gráfico de barras", SetaTendencia: "Seta de tendência",
     ImagemDestaque: "Imagem em destaque", ListaAnimada: "Lista animada", FundoVazio: "Fundo" })[id] || id;
 }

@@ -327,7 +327,7 @@ def decidir_regra(cena: Cena, imagens: list[dict], anterior: str | None) -> Cena
     elif RE_CITA.search(txt) and len(txt.split()) <= 30:
         tpl, dados, why = "Citacao", {"texto": txt, "autor": ""}, "citação"
     elif len(txt.split()) > 14 and dur >= 4:
-        tpl, dados, why = "TextoCorrido", {"texto": _titulo_curto(txt, 18), "destaque": _palavras_chave(txt)[:1]}, "explicação corrida"
+        tpl, dados, why = "TextoCorrido", {"texto": _titulo_curto(txt, 12), "destaque": _palavras_chave(txt)[:1]}, "explicação corrida"
 
     if tpl == anterior and tpl != "TituloImpacto" and anterior is not None:
         pass  # repetição tolerada; o M09 limita repetições consecutivas
