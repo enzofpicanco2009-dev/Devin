@@ -40,6 +40,30 @@
   ],
   "templates": [
     {
+      "id": "TextoCorrido",
+      "status": "implementado",
+      "categoria": "texto",
+      "descricao_para_llm": "Resumo de 1 frase com barra lateral; fallback para explicações corridas sem número nem lista.",
+      "duracao_s": [
+        3,
+        10
+      ],
+      "tipos_conteudo": [
+        "definicao",
+        "explicacao",
+        "exemplo",
+        "opiniao"
+      ],
+      "fases": [
+        "desenvolvimento",
+        "conclusao"
+      ],
+      "props": {
+        "texto": "string(max 20 palavras)",
+        "destaque": "string[]? (max 2)"
+      }
+    },
+    {
       "id": "TituloImpacto",
       "status": "implementado",
       "categoria": "texto",
@@ -224,12 +248,14 @@
         "lado_a": {
           "rotulo": "string",
           "valor": "string|number",
-          "sentimento": "enum"
+          "sentimento": "enum",
+          "itens": "string[]? (max 4)"
         },
         "lado_b": {
           "rotulo": "string",
           "valor": "string|number",
-          "sentimento": "enum"
+          "sentimento": "enum",
+          "itens": "string[]? (max 4)"
         }
       }
     },

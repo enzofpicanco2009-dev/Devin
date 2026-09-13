@@ -177,7 +177,9 @@ def props_citacao(cena: Cena, cfg: ConfigResolvida, avisos: list[str]) -> dict:
 
 def props_comparacao(cena: Cena, cfg: ConfigResolvida, avisos: list[str]) -> dict:
     s = _sem(cena)
-    lado = lambda d: {"rotulo": str(d.get("rotulo", "")), "valor": str(d.get("valor", ""))}  # noqa: E731
+    def lado(d: dict) -> dict:
+        return {"rotulo": str(d.get("rotulo", "")), "valor": str(d.get("valor", "")),
+                "itens": [str(i) for i in d.get("itens", [])][:4]}
     return {**props_base(cena, cfg), "titulo": s.get("titulo", ""), "a": lado(s.get("a", {})),
             "b": lado(s.get("b", {})), "vencedor": s.get("vencedor", "nenhum")}
 
@@ -196,6 +198,14 @@ def props_seta(cena: Cena, cfg: ConfigResolvida, avisos: list[str]) -> dict:
     positivo_quando_sobe = not ((direcao == "sobe" and sent == "negativo") or (direcao == "desce" and sent == "positivo"))
     return {**props_base(cena, cfg), "direcao": direcao, "texto": s.get("texto", ""), "valor": str(s.get("valor", "")),
             "positivoQuandoSobe": positivo_quando_sobe}
+
+
+def props_texto(cena: Cena, cfg: ConfigResolvida, avisos: list[str]) -> dict:
+    s = _sem(cena)
+    texto = s.get("texto") or cena.texto
+    tam = cfg.tema.tipografia.escala.titulo_max * (0.6 if len(texto) < 80 else 0.5)
+    return {**props_base(cena, cfg), "texto": texto, "destaque": [str(d) for d in s.get("destaque", [])][:2],
+            "tamanhoFonte": round(tam)}
 
 
 def props_pergunta(cena: Cena, cfg: ConfigResolvida, avisos: list[str]) -> dict:
@@ -220,6 +230,7 @@ def fazer_props_imagem(mapa_imagens: dict[str, str]):
 
 
 APLICADORES = {
+    "TextoCorrido": props_texto,
     "TituloImpacto": props_titulo_impacto,
     "NumeroDestaque": props_numero,
     "ListaAnimada": props_lista,

@@ -46,7 +46,9 @@ def _resumo_tela(r: roteiro.CenaRoteiro) -> str:
     if r.template == "NumeroDestaque":
         return f"{d['valor']} — {d.get('rotulo', '')}"
     if r.template == "ComparacaoDoisLados":
-        return f"{d['a']['rotulo']} {d['a']['valor']} vs {d['b']['rotulo']} {d['b']['valor']}"
+        def lado(l: dict) -> str:
+            return f"{l['rotulo']} {l.get('valor', '')}".strip() + (" (" + ", ".join(l["itens"]) + ")" if l.get("itens") else "")
+        return f"{lado(d['a'])} vs {lado(d['b'])}"
     if r.template == "GraficoBarras":
         return ", ".join(f"{b['rotulo']}: {b['valor']}{d.get('unidade', '')}" for b in d["barras"])
     if r.template == "SetaTendencia":

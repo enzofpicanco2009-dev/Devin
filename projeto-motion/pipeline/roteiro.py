@@ -30,6 +30,11 @@ class DPergunta(BaseModel):
     texto: str = Field(min_length=1, max_length=120)
 
 
+class DTexto(BaseModel):
+    texto: str = Field(min_length=1, max_length=200)
+    destaque: list[str] = Field(default_factory=list, max_length=2)
+
+
 class DCitacao(BaseModel):
     texto: str = Field(min_length=1, max_length=220)
     autor: str = ""
@@ -49,6 +54,7 @@ class DNumero(BaseModel):
 class DLado(BaseModel):
     rotulo: str = Field(min_length=1, max_length=40)
     valor: str = Field(default="", max_length=20)
+    itens: list[str] = Field(default_factory=list, max_length=4)
 
     @field_validator("valor", mode="before")
     @classmethod
@@ -103,6 +109,7 @@ class DLista(BaseModel):
 
 
 DADOS = {
+    "TextoCorrido": DTexto,
     "TituloImpacto": DTitulo,
     "Pergunta": DPergunta,
     "Citacao": DCitacao,
@@ -133,17 +140,18 @@ PROMPT = """Você é o roteirista visual de um canal do YouTube. Recebe a transc
 
 Como pensar:
 1. Leia tudo e identifique as IDEIAS. Uma cena = uma ideia = um ou mais trechos CONSECUTIVOS. Cada trecho pertence a exatamente uma cena; todos os trechos devem ser usados, em ordem.
-2. Para cada cena, escolha a animação que MELHOR MOSTRA aquilo que é dito NAQUELES trechos (número → NumeroDestaque; evolução no tempo com 2+ valores → GraficoBarras; subiu/caiu → SetaTendencia; A contra B → ComparacaoDoisLados; enumeração → ListaAnimada; pergunta retórica → Pergunta; fala de alguém → Citacao; menciona algo que existe nas imagens → ImagemDestaque; afirmação forte/gancho/conclusão → TituloImpacto).
+2. Para cada cena, escolha a animação que MELHOR MOSTRA aquilo que é dito NAQUELES trechos (número → NumeroDestaque; evolução no tempo com 2+ valores → GraficoBarras; subiu/caiu → SetaTendencia; A contra B → ComparacaoDoisLados; enumeração → ListaAnimada; pergunta retórica → Pergunta; fala de alguém → Citacao; menciona algo que existe nas imagens → ImagemDestaque; afirmação forte/gancho/conclusão → TituloImpacto; explicação corrida sem número nem lista → TextoCorrido com um RESUMO de 1 frase).
 3. Escreva o que aparece NA TELA: curto, direto, como um slide. NUNCA copie a frase falada. Títulos com até 6 palavras. Números exatamente como o narrador diz (ex.: "13,75%", "R$ 2 mil", "2%"). Só use números que aparecem nos trechos daquela cena (um gráfico pode juntar números de trechos vizinhos: nesse caso inclua esses trechos na cena).
 4. Varie: nunca use o mesmo template em 3 cenas seguidas.
 5. Cenas ideais duram de 3 a 9 segundos (veja os tempos dos trechos). Junte trechos curtos que falam da mesma coisa.
 
 Templates e seus dados (use exatamente estes nomes de campos):
 - TituloImpacto: {{"texto": "...", "palavras_destaque": ["..."]}}
+- TextoCorrido: {{"texto": "resumo em 1 frase (até 20 palavras)", "destaque": ["palavra"]}}
 - Pergunta: {{"texto": "...?"}}
 - Citacao: {{"texto": "...", "autor": "..."}}
 - NumeroDestaque: {{"valor": "13,75%", "rotulo": "taxa Selic hoje", "sentimento": "positivo|negativo|neutro"}}
-- ComparacaoDoisLados: {{"titulo": "...", "a": {{"rotulo": "...", "valor": "..."}}, "b": {{"rotulo": "...", "valor": "..."}}, "vencedor": "a|b|nenhum"}}
+- ComparacaoDoisLados: {{"titulo": "...", "a": {{"rotulo": "...", "valor": "...", "itens": ["ponto curto"]}}, "b": {{"rotulo": "...", "valor": "...", "itens": ["ponto curto"]}}, "vencedor": "a|b|nenhum"}}  (valor OU itens; itens até 4)
 - GraficoBarras: {{"titulo": "...", "barras": [{{"rotulo": "2020", "valor": 2}}, {{"rotulo": "2023", "valor": 13.75}}], "unidade": "%"}}
 - SetaTendencia: {{"direcao": "sobe|desce", "texto": "...", "valor": "+11 p.p.", "sentimento": "positivo|negativo|neutro"}}
 - ListaAnimada: {{"titulo": "...", "itens": ["...", "..."]}}
@@ -318,6 +326,8 @@ def decidir_regra(cena: Cena, imagens: list[dict], anterior: str | None) -> Cena
             tpl, dados, why = "ListaAnimada", {"titulo": _titulo_curto(txt, 5), "itens": [_titulo_curto(i, 5) for i in itens]}, "enumeração"
     elif RE_CITA.search(txt) and len(txt.split()) <= 30:
         tpl, dados, why = "Citacao", {"texto": txt, "autor": ""}, "citação"
+    elif len(txt.split()) > 14 and dur >= 4:
+        tpl, dados, why = "TextoCorrido", {"texto": _titulo_curto(txt, 18), "destaque": _palavras_chave(txt)[:1]}, "explicação corrida"
 
     if tpl == anterior and tpl != "TituloImpacto" and anterior is not None:
         pass  # repetição tolerada; o M09 limita repetições consecutivas

@@ -13,6 +13,7 @@ import * as GraficoBarras from "./GraficoBarras";
 import * as SetaTendencia from "./SetaTendencia";
 import * as ImagemDestaque from "./ImagemDestaque";
 import * as Pergunta from "./Pergunta";
+import * as TextoCorrido from "./TextoCorrido";
 
 export type TemplateEntry = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -22,6 +23,11 @@ export type TemplateEntry = {
 };
 
 export const registry = {
+  TextoCorrido: {
+    Component: TextoCorrido.TextoCorrido,
+    schema: TextoCorrido.schema,
+    defaultProps: TextoCorrido.defaultProps,
+  },
   TituloImpacto: {
     Component: TituloImpacto,
     schema: tituloImpactoSchema,
