@@ -21,7 +21,8 @@ from fastapi.staticfiles import StaticFiles
 from pipeline import llm
 from pipeline.canais import FONTES, PALETAS, criar_canal, listar_canais, overrides_design
 from pipeline.comum import PROJETOS, RAIZ, Caminhos, carregar_projeto
-from pipeline.edicao import EdicaoInvalida, cenas_editaveis, editar_cena
+from pipeline.edicao import (EdicaoInvalida, ajustar_tempos, cenas_editaveis, dividir_cena, editar_cena,
+                             remover_cena)
 from pipeline.imagens import adicionar_imagem, listar_imagens, pasta_imagens, remover_imagem
 from pipeline.m08_resolver_config import listar_presets
 from pipeline.m09_motor_decisao import carregar_catalogo
@@ -287,14 +288,45 @@ def cenas(projeto_id: str) -> list[dict]:
     return cenas_editaveis(c)
 
 
-@app.patch("/api/projetos/{projeto_id}/cenas/{cena_id}")
-def editar(projeto_id: str, cena_id: str, template: str = Body(...), dados: dict = Body(...)) -> dict:
-    c = _caminhos(projeto_id)
+def _editavel(projeto_id: str) -> Caminhos:
     job = _jobs.get(projeto_id)
     if job and job["estado"] == "rodando":
         raise HTTPException(409, "Espere a geração terminar para editar")
+    return _caminhos(projeto_id)
+
+
+@app.patch("/api/projetos/{projeto_id}/cenas/{cena_id}")
+def editar(projeto_id: str, cena_id: str, template: str = Body(...), dados: dict = Body(...)) -> dict:
+    c = _editavel(projeto_id)
     try:
         return editar_cena(c, cena_id, template, dados)
+    except EdicaoInvalida as e:
+        raise HTTPException(422, str(e))
+
+
+@app.patch("/api/projetos/{projeto_id}/cenas/{cena_id}/tempos")
+def tempos(projeto_id: str, cena_id: str, inicio: Optional[float] = Body(None), fim: Optional[float] = Body(None)) -> dict:
+    c = _editavel(projeto_id)
+    try:
+        return ajustar_tempos(c, cena_id, inicio, fim)
+    except EdicaoInvalida as e:
+        raise HTTPException(422, str(e))
+
+
+@app.post("/api/projetos/{projeto_id}/cenas/{cena_id}/dividir")
+def dividir(projeto_id: str, cena_id: str, em: Optional[float] = Body(None, embed=True)) -> dict:
+    c = _editavel(projeto_id)
+    try:
+        return dividir_cena(c, cena_id, em)
+    except EdicaoInvalida as e:
+        raise HTTPException(422, str(e))
+
+
+@app.delete("/api/projetos/{projeto_id}/cenas/{cena_id}")
+def remover(projeto_id: str, cena_id: str) -> dict:
+    c = _editavel(projeto_id)
+    try:
+        return remover_cena(c, cena_id)
     except EdicaoInvalida as e:
         raise HTTPException(422, str(e))
 

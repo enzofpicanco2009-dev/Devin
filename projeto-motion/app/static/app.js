@@ -329,12 +329,20 @@ function editorCena(c) {
     } else input = `<input class="campo" ${nome} value="${escapar(String(v ?? ""))}" />`;
     return `<label class="ed-campo"><span>${rotulo}</span>${input}</label>`;
   }).join("");
+  const idx = estado.aoVivo.cenas.findIndex((x) => x.id === c.id), ultima = idx === estado.aoVivo.cenas.length - 1;
   return `<div class="sb-info sb-editor" data-cena="${c.id}">
+    <div class="ed-tempos">
+      <label class="ed-campo"><span>Começa em (s)</span><input class="campo" type="number" step="0.1" id="ed-inicio" value="${c.inicio.toFixed(1)}" ${idx === 0 ? "disabled" : ""} /></label>
+      <label class="ed-campo"><span>Termina em (s)</span><input class="campo" type="number" step="0.1" id="ed-fim" value="${c.fim.toFixed(1)}" ${ultima ? "disabled" : ""} /></label>
+    </div>
+    <small class="sb-pq">O áudio não muda; só o momento em que a tela troca para a cena vizinha.</small>
     <label class="ed-campo"><span>Template</span>
       <select class="campo" id="ed-template" onchange="trocarTemplateEdicao(this.value)">${tpls.map((id) => `<option value="${id}" ${id === tpl ? "selected" : ""}>${escapar(templateNome(id))}</option>`).join("")}</select></label>
     ${campos}
     <div class="ed-erro" id="ed-erro" hidden></div>
-    <div class="sb-linha"><button class="btn" onclick="salvarCena('${c.id}')">Salvar</button><button class="btn ghost" onclick="cancelarEdicao()">Cancelar</button></div>
+    <div class="sb-linha"><button class="btn" onclick="salvarCena('${c.id}')">Salvar</button><button class="btn ghost" onclick="cancelarEdicao()">Cancelar</button>
+      <button class="sb-editar" onclick="dividirCena('${c.id}')" title="Corta esta cena no meio e cria uma nova cena depois">+ Dividir em 2</button>
+      ${estado.aoVivo.cenas.length > 1 ? `<button class="sb-editar" onclick="removerCena('${c.id}')" title="Junta este trecho à cena anterior">Remover</button>` : ""}</div>
     <details class="sb-fala"><summary>Fala original</summary>${escapar(c.fala || "")}</details>
   </div>`;
 }
@@ -361,18 +369,34 @@ function lerEditor() {
   }
   return { template: tpl, dados };
 }
+function mostrarErro(r, e) { $("#ed-erro").hidden = false; $("#ed-erro").textContent = typeof e.detail === "string" ? e.detail : "Dados inválidos."; }
+async function recarregarCenas() {
+  estado.editando = null; estado.editTemplate = null;
+  await atualizar(estado.projetoAtual);
+}
+window.dividirCena = async (id) => {
+  const r = await fetch(`/api/projetos/${estado.projetoAtual}/cenas/${id}/dividir`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+  if (!r.ok) return mostrarErro(r, await r.json().catch(() => ({})));
+  await recarregarCenas();
+};
+window.removerCena = async (id) => {
+  if (!confirm("Remover esta cena? O trecho de áudio passa para a cena vizinha.")) return;
+  const r = await fetch(`/api/projetos/${estado.projetoAtual}/cenas/${id}`, { method: "DELETE" });
+  if (!r.ok) return mostrarErro(r, await r.json().catch(() => ({})));
+  await recarregarCenas();
+};
 window.salvarCena = async (id) => {
+  const c0 = estado.aoVivo.cenas.find((x) => x.id === id);
+  const ini = parseFloat($("#ed-inicio").value), fim = parseFloat($("#ed-fim").value);
+  const mudouTempo = (!isNaN(ini) && Math.abs(ini - c0.inicio) > 0.05) || (!isNaN(fim) && Math.abs(fim - c0.fim) > 0.05);
+  if (mudouTempo) {
+    const rt = await fetch(`/api/projetos/${estado.projetoAtual}/cenas/${id}/tempos`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ inicio: isNaN(ini) ? null : ini, fim: isNaN(fim) ? null : fim }) });
+    if (!rt.ok) return mostrarErro(rt, await rt.json().catch(() => ({})));
+  }
   const corpo = lerEditor();
   const r = await fetch(`/api/projetos/${estado.projetoAtual}/cenas/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo) });
-  if (!r.ok) {
-    const e = await r.json().catch(() => ({}));
-    $("#ed-erro").hidden = false; $("#ed-erro").textContent = typeof e.detail === "string" ? e.detail : "Dados inválidos para este template.";
-    return;
-  }
-  const res = await r.json();
-  const c = estado.aoVivo.cenas.find((x) => x.id === id);
-  Object.assign(c, { template: res.template, dados: res.dados, tela: res.tela, por_que: "editado manualmente", editada: true, preview: null });
-  estado.editando = null; estado.editTemplate = null; redesenharStoryboard();
+  if (!r.ok) return mostrarErro(r, await r.json().catch(() => ({})));
+  await recarregarCenas();
 };
 window.rerenderizar = () => { estado.imagensProjeto = null; regerar(estado.projetoAtual); };
 function templateNome(id) {

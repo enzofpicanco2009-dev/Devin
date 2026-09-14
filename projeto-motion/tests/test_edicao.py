@@ -2,7 +2,8 @@ import json
 
 import pytest
 
-from pipeline import comum
+from pipeline import comum, edicao
+from pipeline.comum import carregar_timeline
 from pipeline.edicao import EdicaoInvalida, cenas_editaveis, editar_cena, validar_dados
 from pipeline.schemas.timeline import Cena, Decisao, Timeline
 
@@ -64,3 +65,31 @@ def test_dados_invalidos_nao_alteram_timeline(projeto):
 def test_validar_converte_valores():
     d = validar_dados("GraficoBarras", {"barras": [{"rotulo": "a", "valor": "10,5"}, {"rotulo": "b", "valor": "3"}]})
     assert d["barras"][0]["valor"] == 10.5
+
+
+def test_ajustar_tempos_move_fronteira_e_palavras(projeto):
+    c = projeto
+    t = carregar_timeline(c)
+    fim_antes = t.cenas[0].render_end_s
+    out = edicao.ajustar_tempos(c, "c001", None, fim_antes + 1.0)
+    t = carregar_timeline(c)
+    assert out["fim"] == t.cenas[0].render_end_s == t.cenas[1].render_start_s
+    assert abs(t.cenas[-1].render_end_s - t.audio.duracao_s) < 0.01
+    assert "m12" not in t.etapas_concluidas and "m09" in t.etapas_concluidas
+    with pytest.raises(edicao.EdicaoInvalida):
+        edicao.ajustar_tempos(c, "c001", 1.0, None)
+
+
+def test_dividir_e_remover_cena(projeto):
+    c = projeto
+    n = len(carregar_timeline(c).cenas)
+    out = edicao.dividir_cena(c, "c001")
+    t = carregar_timeline(c)
+    assert len(t.cenas) == n + 1 and out["id"] == "c002"
+    assert [x.id for x in t.cenas] == [f"c{i + 1:03d}" for i in range(n + 1)]
+    assert t.cenas[1].decisao.template == "TituloImpacto" and t.cenas[1].decisao.origem == "manual"
+    with pytest.raises(edicao.EdicaoInvalida):
+        edicao.dividir_cena(c, "c001", 99.0)
+    edicao.remover_cena(c, "c002")
+    t = carregar_timeline(c)
+    assert len(t.cenas) == n and abs(t.cenas[-1].render_end_s - t.audio.duracao_s) < 0.01
