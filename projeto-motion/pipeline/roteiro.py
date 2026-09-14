@@ -272,10 +272,41 @@ def _numeros(texto: str) -> list[str]:
     return out
 
 
-def _titulo_curto(texto: str, max_palavras: int = 7) -> str:
+MULETAS = ("então", "aí", "e", "mas", "olha", "bom", "agora", "né", "tipo", "ou seja",
+           "assim", "gente", "pessoal", "bem", "então assim", "veja", "vejam", "basicamente",
+           "na verdade", "por exemplo", "enfim", "cara", "tá", "ok", "certo")
+VAZIAS = set("""a o e de da do das dos em no na nos nas um uma uns umas que se por para com como mais
+menos muito pouco isso isto aquilo ele ela eles elas eu você vocês nós meu minha seu sua nosso nossa
+está são ser foi era tem têm ter já não sim ao aos à às pelo pela até sobre quando onde aqui ali lá
+vai vou ia tudo nada algo coisa coisas assim então também ainda só bem mesmo outro outra""".split())
+RE_MULETA = re.compile(r"^(?:(?:" + "|".join(re.escape(m) for m in MULETAS) + r")[,\s]+)+", re.I)
+
+
+def _pontuar_oracao(oracao: str) -> float:
+    palavras = [w.strip(".,;:!?\"'") for w in oracao.split()]
+    if not palavras:
+        return -1
+    conteudo = sum(1 for w in palavras if w.lower() not in VAZIAS and len(w) > 3)
+    numeros = 2 * len(RE_NUM.findall(oracao))
+    proprios = sum(1 for w in palavras[1:] if w[:1].isupper())
+    # orações curtas demais não servem
+    penal = 2 if len(palavras) < 3 else 0
+    return conteudo + numeros + proprios - penal
+
+
+def _frase_nucleo(texto: str) -> str:
+    """Escolhe a oração mais informativa (não a primeira) e remove muletas de fala."""
     t = re.sub(r"[.!?…]+$", "", texto.strip())
-    partes = re.split(r"(?<!\d)[,;:–—]| que | e | mas | porque | então ", t, maxsplit=1)
-    t = partes[0].strip() or t
+    oracoes = [RE_MULETA.sub("", o).strip() for o in
+               re.split(r"(?<!\d)[,;:–—.!?]+| que | porque | então | mas ", t)]
+    oracoes = [o for o in oracoes if o]
+    if not oracoes:
+        return t
+    return max(oracoes, key=_pontuar_oracao)
+
+
+def _titulo_curto(texto: str, max_palavras: int = 7) -> str:
+    t = _frase_nucleo(texto)
     palavras = t.split()
     if len(palavras) > max_palavras:
         t = " ".join(palavras[:max_palavras]) + "…"

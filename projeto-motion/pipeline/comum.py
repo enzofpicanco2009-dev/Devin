@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import shutil
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -91,7 +92,18 @@ def sha256_obj(obj) -> str:
     return "sha256:" + hashlib.sha256(dump.encode("utf-8")).hexdigest()
 
 
+def executavel(nome: str) -> str:
+    """Resolve o caminho de um programa externo (npx→npx.cmd no Windows)."""
+    achado = shutil.which(nome)
+    if achado is None:
+        raise RuntimeError(
+            f"Programa '{nome}' não encontrado no PATH. Instale-o e reabra o terminal."
+        )
+    return achado
+
+
 def rodar(cmd: list[str], cwd: Path | None = None) -> str:
+    cmd = [executavel(cmd[0]), *cmd[1:]]
     r = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if r.returncode != 0:
         raise RuntimeError(
