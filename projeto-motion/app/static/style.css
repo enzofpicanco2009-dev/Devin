@@ -162,3 +162,15 @@ main { max-width: 860px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
 .sb-pq { color: var(--texto-2); font-size: .78rem; }
 .sb-fala { font-size: .78rem; color: var(--texto-2); }
 .sb-fala summary { cursor: pointer; }
+
+/* edição manual de cena */
+.sb-editar { margin-left: auto; background: transparent; border: 1px solid var(--borda); color: var(--texto-2); border-radius: 999px; padding: .15rem .6rem; font-size: .75rem; cursor: pointer; }
+.sb-editar:hover { border-color: var(--acento); color: var(--texto); }
+.sb-cena.editando { border-color: var(--acento); grid-column: span 2; }
+.sb-editor { gap: .5rem; }
+.ed-campo { display: flex; flex-direction: column; gap: .2rem; font-size: .78rem; color: var(--texto-2); }
+.ed-campo .campo { margin-top: 0; padding: .45rem .7rem; font-size: .9rem; color: var(--texto); }
+.ed-erro { color: var(--erro); font-size: .8rem; white-space: pre-wrap; }
+.btn.ghost { background: transparent; }
+.av-rerender { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; background: rgba(255,200,80,.08); border: 1px solid var(--acento); border-radius: 12px; padding: .8rem 1rem; margin-bottom: 1rem; }
+.av-rerender .btn-principal { padding: .6rem 1.2rem; font-size: .95rem; }

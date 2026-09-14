@@ -229,6 +229,7 @@ def executar(projeto_id: str, force: bool = False) -> None:
         tela = _resumo_tela(r) if cena.decisao.props_semanticas else "(fundo)"
         estado["cenas"].append({"id": cena.id, "inicio": cena.render_start_s, "fim": cena.render_end_s,
                                 "template": cena.decisao.template, "tela": tela,
+                                "dados": cena.decisao.props_semanticas,
                                 "por_que": cena.decisao.justificativa, "fala": cena.texto})
         print(f"[{ETAPA}] {cena.id} {cena.render_start_s:5.1f}-{cena.render_end_s:5.1f}s "
               f"{cena.decisao.template:<20} {tela[:70]}")

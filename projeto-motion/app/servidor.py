@@ -14,13 +14,14 @@ import threading
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import Body, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from pipeline import llm
 from pipeline.canais import FONTES, PALETAS, criar_canal, listar_canais, overrides_design
 from pipeline.comum import PROJETOS, RAIZ, Caminhos, carregar_projeto
+from pipeline.edicao import EdicaoInvalida, cenas_editaveis, editar_cena
 from pipeline.imagens import adicionar_imagem, listar_imagens, pasta_imagens, remover_imagem
 from pipeline.m08_resolver_config import listar_presets
 from pipeline.m09_motor_decisao import carregar_catalogo
@@ -276,6 +277,26 @@ def status(projeto_id: str) -> dict:
         "erro": job["erro"] if job else None,
         "log": job["log"][-8:] if job else [],
     }
+
+
+@app.get("/api/projetos/{projeto_id}/cenas")
+def cenas(projeto_id: str) -> list[dict]:
+    c = _caminhos(projeto_id)
+    if not c.timeline_json.exists():
+        return []
+    return cenas_editaveis(c)
+
+
+@app.patch("/api/projetos/{projeto_id}/cenas/{cena_id}")
+def editar(projeto_id: str, cena_id: str, template: str = Body(...), dados: dict = Body(...)) -> dict:
+    c = _caminhos(projeto_id)
+    job = _jobs.get(projeto_id)
+    if job and job["estado"] == "rodando":
+        raise HTTPException(409, "Espere a geração terminar para editar")
+    try:
+        return editar_cena(c, cena_id, template, dados)
+    except EdicaoInvalida as e:
+        raise HTTPException(422, str(e))
 
 
 @app.post("/api/projetos/{projeto_id}/gerar")

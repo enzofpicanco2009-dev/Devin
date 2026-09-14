@@ -130,6 +130,10 @@
     <section id="ao-vivo" class="ao-vivo" hidden>
       <div class="av-cab"><h2>Produção ao vivo</h2><span id="av-modo" class="tag"></span></div>
       <p class="dica" id="av-dica"></p>
+      <div id="av-rerender" class="av-rerender" hidden>
+        <span><strong id="av-rerender-n"></strong> — o vídeo ainda mostra a versão antiga.</span>
+        <button class="btn-principal" onclick="rerenderizar()">Renderizar de novo</button>
+      </div>
       <div id="storyboard" class="storyboard"></div>
     </section>
     <div id="prog-erro" class="erro-box" hidden></div>

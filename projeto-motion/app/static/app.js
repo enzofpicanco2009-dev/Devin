@@ -208,6 +208,7 @@ $("#form").addEventListener("submit", async (e) => {
 // ---------- progresso / resultado ----------
 function abrirProjeto(id) {
   mostrar("progresso");
+  estado.editando = null; estado.editTemplate = null; estado.imagensProjeto = null;
   $("#resultado").hidden = true; $("#prog-erro").hidden = true; $("#log").hidden = true; $("#ao-vivo").hidden = true;
   atualizar(id);
   estado.poll = setInterval(() => atualizar(id), 1500);
@@ -266,19 +267,114 @@ function renderAoVivo(p) {
     : `${av.cenas.length} cenas. O texto falado não vai para a tela: cada cena mostra o que a IA escreveu para ela.`;
   const nomes = Object.fromEntries((estado.opcoes?.templates || []).map((t) => [t.id, t]));
   const renderizando = p.etapa === "m13";
+  const podeEditar = p.estado !== "rodando" && av.status !== "pensando";
   const abertas = new Set($$("#storyboard .sb-fala[open]").map((d) => d.dataset.i));
+  estado.aoVivo = av; estado.projetoAtual = p.id;
   $("#storyboard").innerHTML = av.cenas.map((c, i) => `
-    <div class="sb-cena ${c.preview ? "pronta" : ""}">
+    <div class="sb-cena ${c.preview ? "pronta" : ""} ${estado.editando === c.id ? "editando" : ""}">
       <div class="sb-th">${c.preview ? `<img src="${c.preview}&t=${Date.now()}" alt="" />`
-        : `<div class="sb-vazio ${renderizando ? "pulsa" : ""}"><span>${escapar(templateNome(c.template))}</span>${renderizando ? "<small>renderizando…</small>" : ""}</div>`}</div>
-      <div class="sb-info">
-        <div class="sb-linha"><span class="sb-n">${i + 1}</span><span class="sb-t">${fmtTempo(c.inicio)} – ${fmtTempo(c.fim)}</span><span class="tag mini" title="${escapar(nomes[c.template]?.descricao || "")}">${escapar(templateNome(c.template))}</span></div>
+        : `<div class="sb-vazio ${renderizando ? "pulsa" : ""}"><span>${escapar(templateNome(c.template))}</span>${renderizando ? "<small>renderizando…</small>" : (c.editada ? "<small>renderize para ver</small>" : "")}</div>`}</div>
+      ${estado.editando === c.id ? editorCena(c) : `<div class="sb-info">
+        <div class="sb-linha"><span class="sb-n">${i + 1}</span><span class="sb-t">${fmtTempo(c.inicio)} – ${fmtTempo(c.fim)}</span><span class="tag mini" title="${escapar(nomes[c.template]?.descricao || "")}">${escapar(templateNome(c.template))}</span>
+          ${podeEditar ? `<button class="sb-editar" onclick="editarCena('${c.id}')" title="Trocar template ou texto">Editar</button>` : ""}</div>
         <strong class="sb-tela">${escapar(c.tela || "")}</strong>
         ${c.por_que ? `<small class="sb-pq">${escapar(c.por_que)}</small>` : ""}
         <details class="sb-fala" data-i="${i}" ${abertas.has(String(i)) ? "open" : ""}><summary>Fala original</summary>${escapar(c.fala || "")}</details>
-      </div>
+      </div>`}
     </div>`).join("");
+  const editadas = av.cenas.filter((c) => c.editada && !c.preview).length;
+  $("#av-rerender").hidden = !(podeEditar && editadas);
+  $("#av-rerender-n").textContent = editadas === 1 ? "1 cena editada" : `${editadas} cenas editadas`;
 }
+
+// ---------- edição manual de cena ----------
+const CAMPOS = {
+  TituloImpacto: [["texto", "Frase na tela", "texto"], ["palavras_destaque", "Palavras em destaque (separe por vírgula)", "lista"]],
+  TextoCorrido: [["texto", "Resumo de 1 frase", "longo"], ["destaque", "Palavras em destaque (até 2, por vírgula)", "lista"]],
+  Pergunta: [["texto", "Pergunta", "texto"]],
+  Citacao: [["texto", "Citação", "longo"], ["autor", "Autor", "texto"]],
+  NumeroDestaque: [["valor", "Número (ex: 13,75%)", "texto"], ["rotulo", "O que é esse número", "texto"],
+    ["sentimento", "Cor", "opcoes", [["neutro", "Neutro"], ["positivo", "Positivo (verde)"], ["negativo", "Negativo (vermelho)"]]]],
+  ComparacaoDoisLados: [["titulo", "Título", "texto"], ["a.rotulo", "Lado A — nome", "texto"], ["a.valor", "Lado A — valor", "texto"], ["a.itens", "Lado A — itens (por vírgula)", "lista"],
+    ["b.rotulo", "Lado B — nome", "texto"], ["b.valor", "Lado B — valor", "texto"], ["b.itens", "Lado B — itens (por vírgula)", "lista"],
+    ["vencedor", "Destacar", "opcoes", [["nenhum", "Nenhum"], ["a", "Lado A"], ["b", "Lado B"]]]],
+  GraficoBarras: [["titulo", "Título", "texto"], ["barras", "Barras — uma por linha: nome: valor", "barras"], ["unidade", "Unidade (%, R$…)", "texto"]],
+  SetaTendencia: [["direcao", "Direção", "opcoes", [["sobe", "Sobe"], ["desce", "Desce"]]], ["texto", "Texto", "texto"], ["valor", "Valor", "texto"],
+    ["sentimento", "Cor", "opcoes", [["neutro", "Neutro"], ["positivo", "Positivo (verde)"], ["negativo", "Negativo (vermelho)"]]]],
+  ImagemDestaque: [["imagem", "Imagem do projeto", "imagem"], ["texto", "Título sobre a imagem", "texto"], ["legenda", "Legenda", "texto"]],
+  ListaAnimada: [["titulo", "Título", "texto"], ["itens", "Itens — um por linha (2 a 6)", "linhas"]],
+};
+function pegar(obj, caminho) { return caminho.split(".").reduce((o, k) => (o == null ? undefined : o[k]), obj); }
+function por(obj, caminho, v) { const ks = caminho.split("."); let o = obj; ks.slice(0, -1).forEach((k) => { o[k] = o[k] || {}; o = o[k]; }); o[ks.at(-1)] = v; }
+
+function editorCena(c) {
+  const tpl = estado.editTemplate || c.template;
+  const dados = estado.editTemplate && estado.editTemplate !== c.template
+    ? { texto: c.dados?.texto || c.dados?.titulo || c.tela || "", titulo: c.dados?.titulo || c.dados?.texto || "" }
+    : (c.dados || {});
+  const tpls = (estado.opcoes?.templates || []).map((t) => t.id).filter((id) => CAMPOS[id]);
+  const campos = (CAMPOS[tpl] || []).map(([chave, rotulo, tipo, opcoes]) => {
+    const v = pegar(dados, chave);
+    const nome = `data-campo="${chave}"`;
+    let input;
+    if (tipo === "longo") input = `<textarea class="campo" rows="2" ${nome}>${escapar(v || "")}</textarea>`;
+    else if (tipo === "lista") input = `<input class="campo" ${nome} value="${escapar((v || []).join(", "))}" />`;
+    else if (tipo === "linhas") input = `<textarea class="campo" rows="4" ${nome}>${escapar((v || []).join("\n"))}</textarea>`;
+    else if (tipo === "barras") input = `<textarea class="campo" rows="4" ${nome}>${escapar((v || []).map((b) => `${b.rotulo}: ${b.valor}`).join("\n"))}</textarea>`;
+    else if (tipo === "opcoes") input = `<select class="campo" ${nome}>${opcoes.map(([o, r]) => `<option value="${o}" ${v === o ? "selected" : ""}>${r}</option>`).join("")}</select>`;
+    else if (tipo === "imagem") {
+      const imgs = estado.imagensProjeto || [];
+      input = imgs.length ? `<select class="campo" ${nome}>${imgs.map((im) => `<option value="${im.id}" ${v === im.id ? "selected" : ""}>${escapar(im.nome || im.arquivo)}</option>`).join("")}</select>`
+        : `<small class="sb-pq">Este projeto não tem imagens enviadas.</small>`;
+    } else input = `<input class="campo" ${nome} value="${escapar(String(v ?? ""))}" />`;
+    return `<label class="ed-campo"><span>${rotulo}</span>${input}</label>`;
+  }).join("");
+  return `<div class="sb-info sb-editor" data-cena="${c.id}">
+    <label class="ed-campo"><span>Template</span>
+      <select class="campo" id="ed-template" onchange="trocarTemplateEdicao(this.value)">${tpls.map((id) => `<option value="${id}" ${id === tpl ? "selected" : ""}>${escapar(templateNome(id))}</option>`).join("")}</select></label>
+    ${campos}
+    <div class="ed-erro" id="ed-erro" hidden></div>
+    <div class="sb-linha"><button class="btn" onclick="salvarCena('${c.id}')">Salvar</button><button class="btn ghost" onclick="cancelarEdicao()">Cancelar</button></div>
+    <details class="sb-fala"><summary>Fala original</summary>${escapar(c.fala || "")}</details>
+  </div>`;
+}
+function redesenharStoryboard() { renderAoVivo({ id: estado.projetoAtual, ao_vivo: estado.aoVivo, estado: "concluido", etapa: null }); }
+window.editarCena = async (id) => {
+  if (!estado.imagensProjeto) estado.imagensProjeto = await (await fetch(`/api/projetos/${estado.projetoAtual}/imagens`)).json();
+  estado.editando = id; estado.editTemplate = null; redesenharStoryboard();
+};
+window.trocarTemplateEdicao = (tpl) => { estado.editTemplate = tpl; redesenharStoryboard(); };
+window.cancelarEdicao = () => { estado.editando = null; estado.editTemplate = null; redesenharStoryboard(); };
+function lerEditor() {
+  const tpl = $("#ed-template").value, dados = {};
+  for (const [chave, , tipo] of CAMPOS[tpl] || []) {
+    const el = $(`#storyboard [data-campo="${chave}"]`);
+    if (!el) continue;
+    const raw = el.value.trim();
+    let v = raw;
+    if (tipo === "lista") v = raw.split(",").map((s) => s.trim()).filter(Boolean);
+    else if (tipo === "linhas") v = raw.split("\n").map((s) => s.trim()).filter(Boolean);
+    else if (tipo === "barras") v = raw.split("\n").map((s) => s.trim()).filter(Boolean).map((l) => {
+      const i = l.lastIndexOf(":"); return { rotulo: (i < 0 ? l : l.slice(0, i)).trim(), valor: (i < 0 ? "" : l.slice(i + 1)).trim() };
+    });
+    por(dados, chave, v);
+  }
+  return { template: tpl, dados };
+}
+window.salvarCena = async (id) => {
+  const corpo = lerEditor();
+  const r = await fetch(`/api/projetos/${estado.projetoAtual}/cenas/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo) });
+  if (!r.ok) {
+    const e = await r.json().catch(() => ({}));
+    $("#ed-erro").hidden = false; $("#ed-erro").textContent = typeof e.detail === "string" ? e.detail : "Dados inválidos para este template.";
+    return;
+  }
+  const res = await r.json();
+  const c = estado.aoVivo.cenas.find((x) => x.id === id);
+  Object.assign(c, { template: res.template, dados: res.dados, tela: res.tela, por_que: "editado manualmente", editada: true, preview: null });
+  estado.editando = null; estado.editTemplate = null; redesenharStoryboard();
+};
+window.rerenderizar = () => { estado.imagensProjeto = null; regerar(estado.projetoAtual); };
 function templateNome(id) {
   return ({ TextoCorrido: "Texto resumido", TituloImpacto: "Título de impacto", Pergunta: "Pergunta", Citacao: "Citação", NumeroDestaque: "Número em destaque",
     ComparacaoDoisLados: "Comparação", GraficoBarras: "Gráfico de barras", SetaTendencia: "Seta de tendência",
@@ -288,7 +384,7 @@ function fmtTempo(s) { const m = Math.floor(s / 60); return `${m}:${String(Math.
 
 window.regerar = async (id) => { await fetch(`/api/projetos/${id}/gerar`, { method: "POST" }); abrirProjeto(id); };
 function rotuloFormato(f) { return estado.opcoes?.formatos.find((x) => x.id === f)?.nome ?? f; }
-function escapar(s) { return s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c])); }
+function escapar(s) { return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
 
 // ---------- biblioteca ----------
 async function carregarBiblioteca() {
