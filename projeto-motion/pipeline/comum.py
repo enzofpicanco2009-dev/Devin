@@ -92,7 +92,7 @@ def sha256_obj(obj) -> str:
 
 
 def rodar(cmd: list[str], cwd: Path | None = None) -> str:
-    r = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
+    r = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if r.returncode != 0:
         raise RuntimeError(
             f"Comando falhou ({r.returncode}): {' '.join(cmd)}\n{r.stderr[-4000:]}"

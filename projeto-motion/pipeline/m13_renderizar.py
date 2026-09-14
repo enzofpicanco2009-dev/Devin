@@ -65,7 +65,7 @@ def executar(projeto_id: str, force: bool = False, formato_id: str | None = None
     print(f"[{ETAPA}] renderizando {len(t.cenas)} cenas, {t.audio.duracao_s:.1f}s @ {formato.fps}fps "
           f"{formato.largura}x{formato.altura} …")
     inicio = time.time()
-    r = subprocess.run(cmd, cwd=REMOTION, text=True, capture_output=True)
+    r = subprocess.run(cmd, cwd=REMOTION, text=True, capture_output=True, encoding="utf-8", errors="replace")
     if r.returncode != 0:
         raise RuntimeError(f"Render falhou:\n{r.stdout[-3000:]}\n{r.stderr[-3000:]}")
 

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import re
+import os
 import subprocess
 import sys
 import tempfile
@@ -51,8 +52,9 @@ def _executar_job(projeto_id: str, formatos: list[str]) -> None:
     for fmt in formatos:
         job["formato_atual"] = fmt
         cmd = [sys.executable, "-m", "pipeline", "run", "--projeto", projeto_id, "--formato", fmt]
+        env = {**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"}
         proc = subprocess.Popen(cmd, cwd=RAIZ, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                text=True, bufsize=1)
+                                text=True, encoding="utf-8", errors="replace", bufsize=1, env=env)
         assert proc.stdout is not None
         for linha in proc.stdout:
             linha = linha.rstrip()
