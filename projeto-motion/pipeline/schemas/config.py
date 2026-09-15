@@ -36,7 +36,7 @@ class TranscricaoConfig(BaseModel):
 
 
 class DecisaoConfig(BaseModel):
-    provedor: Literal["nenhum", "ollama", "openai", "anthropic"] = "nenhum"
+    provedor: Literal["nenhum", "ollama", "externo", "openai", "anthropic"] = "nenhum"
     modelo: Optional[str] = None
     temperatura: float = 0.3
     template_fixo: Optional[str] = "TituloImpacto"

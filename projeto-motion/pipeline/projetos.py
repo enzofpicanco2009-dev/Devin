@@ -41,6 +41,7 @@ def criar_projeto(
     formato_principal: str | None = None,
     overrides_tema: dict | None = None,
     usar_ia: bool = True,
+    roteiro_externo: bool = False,
 ) -> Path:
     if not ID_PROJETO_RE.match(projeto_id):
         raise ValueError(f"ID de projeto inválido: {projeto_id!r}")
@@ -73,8 +74,8 @@ def criar_projeto(
         "estilo_id": estilo_id,
         "transcricao": {"modelo": modelo},
         "overrides": {"tema": overrides_tema} if overrides_tema else {},
-        "decisao": ({"provedor": "ollama", "template_fixo": None} if usar_ia
-                    else {"provedor": "nenhum", "template_fixo": None}),
+        "decisao": {"provedor": "externo" if roteiro_externo else ("ollama" if usar_ia else "nenhum"),
+                    "template_fixo": None},
     }
     (raiz / "projeto.json").write_text(json.dumps(projeto, ensure_ascii=False, indent=2), encoding="utf-8")
     return raiz

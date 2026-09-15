@@ -175,3 +175,12 @@ main { max-width: 860px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
 .av-rerender { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; background: rgba(255,200,80,.08); border: 1px solid var(--acento); border-radius: 12px; padding: .8rem 1rem; margin-bottom: 1rem; }
 .av-rerender .btn-principal { padding: .6rem 1.2rem; font-size: .95rem; }
 .ed-tempos { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+
+/* roteiro com outra IA */
+.externo { margin-top: 1.5rem; padding: 1.2rem; border: 1px solid var(--borda); border-radius: 14px; background: var(--bg-2, rgba(255,255,255,.03)); }
+.ext-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: .8rem; }
+.ext-col { min-width: 0; }
+.ext-cab { display: flex; justify-content: space-between; align-items: center; gap: .6rem; flex-wrap: wrap; }
+.ext-area { margin-top: .6rem; min-height: 220px; resize: vertical; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .82rem; line-height: 1.4; color: var(--texto); }
+.externo .acao { margin-top: .6rem; }
+@media (max-width: 800px) { .ext-grid { grid-template-columns: 1fr; } }

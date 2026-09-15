@@ -2,7 +2,7 @@ const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 
 const estado = { audio: null, canal: null, tema: null, estilo: null, paleta: null, fonte: null,
-  imagens: [], formatos: new Set(["16x9"]), opcoes: null, poll: null };
+  imagens: [], formatos: new Set(["16x9"]), opcoes: null, poll: null, roteiroModo: "externo" };
 
 // ---------- navegação ----------
 function mostrar(tela) {
@@ -32,8 +32,10 @@ async function carregarOpcoes() {
   $("#paletas").addEventListener("click", (e) => { const b = e.target.closest(".paleta"); if (b) { estado.paleta = b.dataset.id || null; $$("#paletas .paleta").forEach((x) => x.classList.toggle("sel", x === b)); amostra(); } });
   $("#fontes").addEventListener("click", (e) => { const b = e.target.closest(".fonte"); if (b) { estado.fonte = b.dataset.id || null; $$("#fontes .fonte").forEach((x) => x.classList.toggle("sel", x === b)); amostra(); } });
 
-  if (!ia.disponivel) { $("#usar-ia").checked = false; $("#ia-rotulo").textContent = "IA local (Ollama) não encontrada — o roteiro será feito por regras"; }
-  else $("#ia-rotulo").textContent = `Roteiro visual com IA local (${ia.modelo})`;
+  if (!ia.disponivel) { $("#ia-rotulo").textContent = "Ollama não encontrado neste PC — se escolher, o roteiro cai em regras"; }
+  else $("#ia-rotulo").textContent = `Roda no seu PC, sem custo (${ia.modelo})`;
+  selecionarRoteiro(estado.roteiroModo);
+  $("#roteiro-modos").addEventListener("click", (e) => { const c = e.target.closest(".card"); if (c) selecionarRoteiro(c.dataset.id); });
 
   $("#temas").innerHTML = temas.map((t) => {
     const c = t.cores, f = t.tipografia?.fonte_titulo || {};
@@ -190,7 +192,7 @@ $("#form").addEventListener("submit", async (e) => {
   fd.append("fonte_id", estado.fonte || "");
   fd.append("formatos", [...estado.formatos].join(","));
   fd.append("modelo", $("#modelo").value);
-  fd.append("usar_ia", $("#usar-ia").checked ? "true" : "false");
+  fd.append("roteiro_modo", estado.roteiroModo);
   for (const im of estado.imagens) fd.append("imagens", im.file, im.file.name);
   fd.append("imagens_meta", JSON.stringify(estado.imagens.map((im) => ({ tags: im.tags, descricao: im.descricao }))));
   try {
@@ -201,15 +203,53 @@ $("#form").addEventListener("submit", async (e) => {
   } catch (err) {
     $("#erro-form").textContent = err.message;
   } finally {
-    btn.disabled = false; btn.textContent = "Gerar vídeo";
+    btn.disabled = false; selecionarRoteiro(estado.roteiroModo);
   }
 });
+
+function selecionarRoteiro(id) {
+  estado.roteiroModo = id;
+  $$("#roteiro-modos .card").forEach((c) => c.classList.toggle("sel", c.dataset.id === id));
+  $("#gerar").textContent = id === "externo" ? "Transcrever áudio" : "Gerar vídeo";
+}
+
+// ---------- roteiro de outra IA ----------
+async function copiar(texto, btn) {
+  try { await navigator.clipboard.writeText(texto); }
+  catch { const ta = document.createElement("textarea"); ta.value = texto; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); }
+  const antes = btn.textContent; btn.textContent = "Copiado!"; setTimeout(() => (btn.textContent = antes), 1500);
+}
+$("#ext-copiar-transcricao").addEventListener("click", (e) => copiar($("#ext-transcricao").value, e.currentTarget));
+$("#ext-copiar-prompt").addEventListener("click", (e) => copiar($("#ext-prompt").value, e.currentTarget));
+$("#ext-gerar").addEventListener("click", async (e) => {
+  const btn = e.currentTarget; const id = estado.projetoAtual;
+  const texto = $("#ext-roteiro").value.trim();
+  $("#ext-erro").textContent = "";
+  if (!texto) { $("#ext-erro").textContent = "Cole o roteiro que a IA devolveu."; return; }
+  btn.disabled = true;
+  try {
+    const r = await fetch(`/api/projetos/${id}/roteiro`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto }) });
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || r.statusText);
+    abrirProjeto(id);
+  } catch (err) { $("#ext-erro").textContent = err.message; }
+  finally { btn.disabled = false; }
+});
+
+function renderExterno(p) {
+  const ext = p.roteiro_externo;
+  const el = $("#externo");
+  if (!ext || !ext.pronto || p.estado === "rodando") { el.hidden = true; return; }
+  el.hidden = false;
+  if ($("#ext-transcricao").value !== ext.transcricao) { $("#ext-transcricao").value = ext.transcricao; $("#ext-prompt").value = ext.prompt; }
+  $("#ext-status").textContent = ext.pendente ? `${ext.trechos} trechos transcritos — aguardando o roteiro` : "roteiro aplicado — cole outro para refazer";
+}
 
 // ---------- progresso / resultado ----------
 function abrirProjeto(id) {
   mostrar("progresso");
   estado.editando = null; estado.editTemplate = null; estado.imagensProjeto = null;
-  $("#resultado").hidden = true; $("#prog-erro").hidden = true; $("#log").hidden = true; $("#ao-vivo").hidden = true;
+  $("#resultado").hidden = true; $("#prog-erro").hidden = true; $("#log").hidden = true; $("#ao-vivo").hidden = true; $("#externo").hidden = true;
+  estado.projetoAtual = id;
   atualizar(id);
   estado.poll = setInterval(() => atualizar(id), 1500);
 }
@@ -224,18 +264,21 @@ async function atualizar(id) {
   $("#prog-sub").textContent = [nomeTema, nomeEstilo, p.formatos.join(" · ")].filter(Boolean).join("  •  ");
 
   const ids = p.etapas.map(([e]) => e);
-  const idx = p.etapa ? ids.indexOf(p.etapa) : (p.estado === "concluido" ? ids.length : -1);
+  const aguardandoRoteiro = p.roteiro_externo?.pronto && p.roteiro_externo.pendente && p.estado !== "rodando";
+  const idx = p.etapa ? ids.indexOf(p.etapa) : (aguardandoRoteiro ? ids.indexOf("m09") : (p.estado === "concluido" ? ids.length : -1));
   const fmt = p.formato_atual ? ` (${p.formato_atual})` : "";
   $("#etapas").innerHTML = p.etapas.map(([e, nome], i) => {
-    const cls = p.estado === "concluido" || i < idx ? "feita" : (i === idx && p.estado === "rodando" ? "atual" : "");
+    const cls = (p.estado === "concluido" && !aguardandoRoteiro) || i < idx ? "feita" : (i === idx && p.estado === "rodando" ? "atual" : "");
     const ico = cls === "feita" ? "✓" : "";
-    return `<li class="${cls}"><span class="ico">${ico}</span>${nome}${cls === "atual" ? fmt : ""}</li>`;
+    const extra = aguardandoRoteiro && e === "m09" ? " — esperando você colar o roteiro" : "";
+    return `<li class="${cls}"><span class="ico">${ico}</span>${nome}${cls === "atual" ? fmt : ""}${extra}</li>`;
   }).join("");
   $("#etapas").hidden = p.estado === "novo";
 
   if (p.estado === "rodando" && p.log.length) { $("#log").hidden = false; $("#log").textContent = p.log.join("\n"); }
   else $("#log").hidden = true;
 
+  renderExterno(p);
   renderAoVivo(p);
 
   if (p.estado === "erro") {
@@ -260,7 +303,7 @@ function renderAoVivo(p) {
   const av = p.ao_vivo;
   if (!av) { $("#ao-vivo").hidden = true; return; }
   $("#ao-vivo").hidden = false;
-  const modo = { ia: `IA local · ${av.modelo || ""}`, regras: "Roteiro por regras", fixo: "Template fixo" }[av.modo] || av.modo;
+  const modo = { ia: `IA local · ${av.modelo || ""}`, externo: "Roteiro de outra IA", regras: "Roteiro por regras", fixo: "Template fixo" }[av.modo] || av.modo;
   $("#av-modo").textContent = av.status === "pensando" ? `${modo} — lendo a transcrição…` : modo;
   $("#av-dica").textContent = av.status === "pensando"
     ? "A IA está lendo a narração inteira, dividindo em ideias e decidindo o que aparece em cada cena."

@@ -18,7 +18,7 @@ from fastapi import Body, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from pipeline import llm
+from pipeline import llm, roteiro_externo
 from pipeline.canais import FONTES, PALETAS, criar_canal, listar_canais, overrides_design
 from pipeline.comum import PROJETOS, RAIZ, Caminhos, carregar_projeto
 from pipeline.edicao import (EdicaoInvalida, ajustar_tempos, cenas_editaveis, dividir_cena, editar_cena,
@@ -49,11 +49,13 @@ _jobs: dict[str, dict] = {}
 _lock = threading.Lock()
 
 
-def _executar_job(projeto_id: str, formatos: list[str]) -> None:
+def _executar_job(projeto_id: str, formatos: list[str], ate: Optional[str] = None) -> None:
     job = _jobs[projeto_id]
-    for fmt in formatos:
-        job["formato_atual"] = fmt
+    for fmt in (formatos[:1] if ate else formatos):
+        job["formato_atual"] = None if ate else fmt
         cmd = [sys.executable, "-m", "pipeline", "run", "--projeto", projeto_id, "--formato", fmt]
+        if ate:
+            cmd += ["--ate", ate]
         env = {**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"}
         proc = subprocess.Popen(cmd, cwd=RAIZ, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                 text=True, encoding="utf-8", errors="replace", bufsize=1, env=env)
@@ -69,7 +71,8 @@ def _executar_job(projeto_id: str, formatos: list[str]) -> None:
             job["estado"] = "erro"
             job["erro"] = "\n".join(job["log"][-15:])
             return
-        job["prontos"].append(fmt)
+        if not ate:
+            job["prontos"].append(fmt)
     job["estado"] = "concluido"
     job["etapa"] = None
 
@@ -137,6 +140,7 @@ async def criar(
     formatos: str = Form("16x9"),
     modelo: str = Form("small"),
     usar_ia: bool = Form(True),
+    roteiro_modo: str = Form(""),
     imagens: list[UploadFile] = File([]),
     imagens_meta: str = Form("[]"),
 ) -> dict:
@@ -147,6 +151,11 @@ async def criar(
         raise HTTPException(400, "Modelo de transcrição inválido")
     if canal_id not in {c["id"] for c in listar_canais()}:
         raise HTTPException(400, "Canal não existe")
+    if roteiro_modo and roteiro_modo not in {"ia", "regras", "externo"}:
+        raise HTTPException(400, "Modo de roteiro inválido")
+    if roteiro_modo:
+        usar_ia = roteiro_modo == "ia"
+    externo = roteiro_modo == "externo"
     try:
         overrides = overrides_design(paleta_id or None, fonte_id or None)
         meta = json.loads(imagens_meta or "[]")
@@ -164,7 +173,7 @@ async def criar(
         try:
             criar_projeto(projeto_id, tmp_path, canal=canal_id, titulo=titulo, modelo=modelo, formatos=lista,
                           tema_id=tema_id or None, estilo_id=estilo_id or None,
-                          overrides_tema=overrides or None, usar_ia=usar_ia)
+                          overrides_tema=overrides or None, usar_ia=usar_ia, roteiro_externo=externo)
         except ValueError as e:
             raise HTTPException(400, str(e))
         finally:
@@ -175,7 +184,8 @@ async def criar(
             await _guardar_imagem(c, img, m)
         _jobs[projeto_id] = {"estado": "rodando", "etapa": None, "formato_atual": None,
                              "formatos": lista, "prontos": [], "log": [], "erro": None}
-    threading.Thread(target=_executar_job, args=(projeto_id, lista), daemon=True).start()
+    # com roteiro externo, só transcreve e divide em trechos; o vídeo sai depois que o roteiro for colado
+    threading.Thread(target=_executar_job, args=(projeto_id, lista, "m04" if externo else None), daemon=True).start()
     return {"id": projeto_id, "titulo": titulo}
 
 
@@ -270,6 +280,7 @@ def status(projeto_id: str) -> dict:
         "imagens": len(listar_imagens(c)),
         "estilo_id": projeto.estilo_id,
         "formatos": [f.id for f in projeto.formatos],
+        "roteiro_externo": roteiro_externo.pacote(c) if projeto.decisao.provedor == "externo" else None,
         "prontos": prontos,
         "estado": job["estado"] if job else ("concluido" if prontos else "novo"),
         "etapa": job["etapa"] if job else None,
@@ -329,6 +340,22 @@ def remover(projeto_id: str, cena_id: str) -> dict:
         return remover_cena(c, cena_id)
     except EdicaoInvalida as e:
         raise HTTPException(422, str(e))
+
+
+@app.post("/api/projetos/{projeto_id}/roteiro")
+def colar_roteiro(projeto_id: str, texto: str = Body(..., embed=True)) -> dict:
+    """Recebe o JSON escrito por outra IA, valida e já dispara m09→m14."""
+    c = _editavel(projeto_id)
+    try:
+        info = roteiro_externo.aplicar(c, texto)
+    except roteiro_externo.RoteiroExternoInvalido as e:
+        raise HTTPException(422, str(e))
+    projeto = carregar_projeto(c)
+    lista = [f.id for f in projeto.formatos]
+    _jobs[projeto_id] = {"estado": "rodando", "etapa": None, "formato_atual": None,
+                         "formatos": lista, "prontos": [], "log": [], "erro": None}
+    threading.Thread(target=_executar_job, args=(projeto_id, lista), daemon=True).start()
+    return info
 
 
 @app.post("/api/projetos/{projeto_id}/gerar")

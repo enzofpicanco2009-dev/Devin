@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import json
 
-from . import llm, roteiro
+from . import llm, roteiro, roteiro_externo
 from .comum import CATALOGO, Caminhos, carregar_projeto, carregar_timeline, salvar_timeline
 from .imagens import listar_imagens
 from .schemas.timeline import Cena, Decisao, Timeline
@@ -176,7 +176,11 @@ def executar(projeto_id: str, force: bool = False) -> None:
     _ao_vivo(c, estado)
 
     rot: list[roteiro.CenaRoteiro] | None = None
-    if projeto.decisao.provedor == "ollama":
+    if projeto.decisao.provedor == "externo":
+        rot = roteiro_externo.carregar(c)
+        modo = "externo"
+        print(f"[{ETAPA}] usando roteiro colado de outra IA ({len(rot)} cenas)")
+    elif projeto.decisao.provedor == "ollama":
         modelo = llm.escolher_modelo(projeto.decisao.modelo) if llm.disponivel() else None
         if not modelo:
             print(f"[{ETAPA}] Ollama indisponível — usando roteiro por regras")

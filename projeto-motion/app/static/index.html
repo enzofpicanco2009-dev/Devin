@@ -107,8 +107,17 @@
               <option value="medium">Máxima (medium, lento)</option>
             </select>
           </label>
-          <label class="linha-check"><input type="checkbox" id="usar-ia" checked /> <span id="ia-rotulo">Roteiro visual com IA local (Ollama)</span></label>
         </details>
+      </div>
+
+      <!-- Passo 7: roteiro -->
+      <div class="passo">
+        <div class="passo-cab"><span class="num">7</span><h2>Quem escreve o roteiro das cenas</h2></div>
+        <div id="roteiro-modos" class="cards">
+          <button type="button" class="card" data-id="externo"><div class="info"><strong>Outra IA (ChatGPT, Gemini…)</strong><small>Transcrevo o áudio, você copia o prompt, cola o roteiro que a IA devolver e eu gero o vídeo.</small></div></button>
+          <button type="button" class="card" data-id="ia"><div class="info"><strong>IA local (Ollama)</strong><small id="ia-rotulo">Roda no seu PC, sem custo.</small></div></button>
+          <button type="button" class="card" data-id="regras"><div class="info"><strong>Automático por regras</strong><small>Sem IA: recorta a fala e escolhe o template por padrões (mais simples).</small></div></button>
+        </div>
       </div>
 
       <div class="acao">
@@ -126,6 +135,23 @@
 
     <ol id="etapas" class="etapas"></ol>
     <pre id="log" class="log" hidden></pre>
+
+    <section id="externo" class="externo" hidden>
+      <div class="av-cab"><h2>Roteiro com outra IA</h2><span id="ext-status" class="tag"></span></div>
+      <p class="dica">1) Copie o prompt (já vem com a transcrição minutada). 2) Cole no ChatGPT, Gemini ou Claude. 3) Cole aqui o JSON que a IA responder e clique em Gerar.</p>
+      <div class="ext-grid">
+        <div class="ext-col">
+          <div class="ext-cab"><strong>Transcrição minutada</strong><span><button type="button" class="btn" id="ext-copiar-transcricao">Copiar transcrição</button> <button type="button" class="btn-principal" id="ext-copiar-prompt">Copiar prompt completo</button></span></div>
+          <textarea id="ext-transcricao" class="campo ext-area" readonly spellcheck="false"></textarea>
+          <details class="avancado"><summary>Ver o prompt que será copiado</summary><textarea id="ext-prompt" class="campo ext-area" readonly spellcheck="false"></textarea></details>
+        </div>
+        <div class="ext-col">
+          <div class="ext-cab"><strong>Roteiro devolvido pela IA (JSON)</strong></div>
+          <textarea id="ext-roteiro" class="campo ext-area" placeholder='Cole aqui a resposta da IA, começando com {"cenas": [ ...' spellcheck="false"></textarea>
+          <div class="acao"><button type="button" class="btn-principal" id="ext-gerar">Gerar vídeo com este roteiro</button><span id="ext-erro" class="erro"></span></div>
+        </div>
+      </div>
+    </section>
 
     <section id="ao-vivo" class="ao-vivo" hidden>
       <div class="av-cab"><h2>Produção ao vivo</h2><span id="av-modo" class="tag"></span></div>

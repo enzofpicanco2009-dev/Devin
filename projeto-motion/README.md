@@ -26,12 +26,21 @@ pela própria interface, ficam em `config/canais/`), troca **paleta de cores e f
 e envia **imagens do vídeo** com palavras-chave (entram na cena quando a narração fala delas).
 Durante a produção, o painel *Produção ao vivo* mostra o roteiro cena a cena e o frame renderizado de cada uma.
 
-### Roteiro com IA local (opcional)
+### Quem escreve o roteiro das cenas
 
-Instale o [Ollama](https://ollama.com) e baixe um modelo (`ollama pull qwen2.5:7b`). Com ele rodando,
-a etapa de roteiro lê a transcrição inteira, divide em ideias e decide o que aparece em cada cena
-(título, número, gráfico, seta, comparação, imagem…). O texto falado **não** vai para a tela.
-Sem Ollama (ou desmarcando "usar IA" em Opções avançadas) o roteiro é feito por regras.
+No passo 7 da tela de novo vídeo:
+
+- **Outra IA (ChatGPT, Gemini, Claude…)** — padrão. O botão vira *Transcrever áudio*; ao terminar,
+  aparece a **transcrição minutada** (trechos numerados `#1 [0.0-7.3] …`) e o botão **Copiar prompt
+  completo**, que já inclui a transcrição, a lista de templates e o formato de resposta. Cole na IA,
+  copie o JSON devolvido (`{"cenas": [{"segmentos": [1, 2], "template": "...", "dados": {...}}]}`),
+  cole no campo *Roteiro devolvido pela IA* e clique em *Gerar vídeo com este roteiro*. O JSON é
+  validado (templates, campos, números dos trechos); os tempos continuam vindo do Whisper.
+- **IA local (Ollama)** — instale o [Ollama](https://ollama.com) e baixe um modelo
+  (`ollama pull qwen2.5:7b`); a etapa de roteiro roda no seu PC sem sair da aplicação.
+- **Automático por regras** — sem IA; escolhe o template por padrões da fala.
+
+Em todos os modos o texto falado **não** vai para a tela; cada cena mostra o que o roteiro definiu.
 
 ## Uso pela linha de comando
 
