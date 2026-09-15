@@ -51,3 +51,16 @@ def test_aplicar_rejeita_invalido(projeto, texto):
     with pytest.raises(roteiro_externo.RoteiroExternoInvalido):
         roteiro_externo.aplicar(projeto, texto)
     assert not (projeto.raiz / "entrada" / roteiro_externo.ARQUIVO).exists()
+
+
+def test_dividir_em_blocos_corta_em_fim_de_palavra():
+    from pipeline.m04_estruturar_cenas import Grupo, dividir_em_blocos
+    palavras = [{"word": f"p{i}", "start": i * 0.5, "end": i * 0.5 + 0.4} for i in range(24)]  # 12 s de fala
+    g = Grupo(0.0, 11.9, ["fala"], palavras, [0])
+    blocos = dividir_em_blocos([g], 3.0)
+    assert len(blocos) == 4
+    assert [b.textos[0].split()[0] for b in blocos] == ["p0", "p6", "p12", "p18"]
+    assert blocos[0].end <= blocos[1].start
+    assert blocos[-1].end == 11.9
+    curto = Grupo(0.0, 2.0, ["oi"], palavras[:4], [0])
+    assert dividir_em_blocos([curto], 3.0) == [curto]

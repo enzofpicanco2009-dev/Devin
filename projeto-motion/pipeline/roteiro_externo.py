@@ -19,6 +19,12 @@ from .imagens import listar_imagens
 from .schemas.timeline import Cena, Timeline
 
 ARQUIVO = "roteiro_externo.json"
+_REGRA_DURACAO = "5. Cenas ideais duram de 3 a 9 segundos (veja os tempos dos trechos). Junte trechos curtos que falam da mesma coisa."
+_REGRA_DURACAO_EXTERNO = (
+    "5. Os trechos têm ~3 s cada e servem só como marcação de tempo: VOCÊ decide o agrupamento. "
+    "Junte quantos trechos consecutivos quiser numa cena (uma ideia completa pode ter 3, 6, 12 s…); "
+    "o que você agrupar será respeitado exatamente, sem cortes nem fusões automáticas."
+)
 _CERCA = re.compile(r"^\s*```(?:json)?\s*|\s*```\s*$", re.I)
 
 
@@ -50,7 +56,7 @@ def pacote(c: Caminhos) -> dict:
     cenas = _cenas_base(c, t)
     imagens = listar_imagens(c)
     transcricao = roteiro._transcricao_texto(cenas)
-    prompt = roteiro.PROMPT.format(
+    prompt = roteiro.PROMPT.replace(_REGRA_DURACAO, _REGRA_DURACAO_EXTERNO).format(
         imagens=roteiro._imagens_texto(imagens),
         canal=_descricao_canal(projeto.canal_id),
         transcricao=transcricao,

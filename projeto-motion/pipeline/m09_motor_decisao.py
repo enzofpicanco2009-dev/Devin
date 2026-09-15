@@ -62,7 +62,8 @@ def _resumo_tela(r: roteiro.CenaRoteiro) -> str:
 
 # ---------------------------------------------------------------- reconstrução de cenas (modo LLM)
 
-def _reconstruir(t: Timeline, rot: list[roteiro.CenaRoteiro], imagens: list[dict]) -> list[Cena]:
+def _reconstruir(t: Timeline, rot: list[roteiro.CenaRoteiro], imagens: list[dict],
+                 partir_longas: bool = True) -> list[Cena]:
     """Funde as cenas do M04 conforme os grupos de trechos escolhidos pela IA.
 
     Trechos não citados pela IA (e cenas de preenchimento) são absorvidos pela cena anterior
@@ -93,7 +94,8 @@ def _reconstruir(t: Timeline, rot: list[roteiro.CenaRoteiro], imagens: list[dict
         atual: list[Cena] = []
         r: roteiro.CenaRoteiro | None = rot[k]
         for c in membros:
-            if atual and c.render_end_s - atual[0].render_start_s > DURACAO_MAX_CENA_S and not c.preenchimento:
+            if (partir_longas and atual and not c.preenchimento
+                    and c.render_end_s - atual[0].render_start_s > DURACAO_MAX_CENA_S):
                 partes.append((r, atual))
                 atual, r = [], None
             atual.append(c)
@@ -197,7 +199,7 @@ def executar(projeto_id: str, force: bool = False) -> None:
                 rot = None
 
     if rot is not None:
-        cenas = _reconstruir(t, rot, imagens)
+        cenas = _reconstruir(t, rot, imagens, partir_longas=modo != "externo")
     elif projeto.decisao.provedor == "nenhum" and projeto.decisao.template_fixo:
         template = projeto.decisao.template_fixo
         if template not in ids_impl:
@@ -219,7 +221,7 @@ def executar(projeto_id: str, force: bool = False) -> None:
                                        justificativa=r.justificativa, confianca=0.6)
         cenas = t.cenas
 
-    if modo != "fixo":
+    if modo not in ("fixo", "externo"):
         _limitar_repeticoes(cenas, imagens)
 
     t.cenas = cenas

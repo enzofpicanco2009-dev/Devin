@@ -31,7 +31,7 @@ Durante a produção, o painel *Produção ao vivo* mostra o roteiro cena a cena
 No passo 7 da tela de novo vídeo:
 
 - **Outra IA (ChatGPT, Gemini, Claude…)** — padrão. O botão vira *Transcrever áudio*; ao terminar,
-  aparece a **transcrição minutada** (trechos numerados `#1 [0.0-7.3] …`) e o botão **Copiar prompt
+  aparece a **transcrição minutada** em blocos de ~3 s (`#1 [0.0-3.4] …`) — a IA decide livremente quais blocos formam cada cena e o botão **Copiar prompt
   completo**, que já inclui a transcrição, a lista de templates e o formato de resposta. Cole na IA,
   copie o JSON devolvido (`{"cenas": [{"segmentos": [1, 2], "template": "...", "dados": {...}}]}`),
   cole no campo *Roteiro devolvido pela IA* e clique em *Gerar vídeo com este roteiro*. O JSON é

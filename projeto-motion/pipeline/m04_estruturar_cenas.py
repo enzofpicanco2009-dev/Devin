@@ -10,6 +10,7 @@ from .schemas.config import Ritmo
 from .schemas.timeline import Cena, Palavra
 
 ETAPA = "m04"
+BLOCO_EXTERNO_S = 3.0  # tamanho dos trechos minutados quando outra IA decide o agrupamento
 
 
 @dataclass
@@ -99,6 +100,29 @@ def dividir_longas(grupos: list[Grupo], segmentos: list[dict], r: Ritmo) -> list
     return saida
 
 
+def dividir_em_blocos(grupos: list[Grupo], alvo_s: float) -> list[Grupo]:
+    """Recorta cada grupo em blocos de ~alvo_s cortando só em fim de palavra.
+    Grupos sem tempos de palavra ficam inteiros."""
+    saida: list[Grupo] = []
+    for g in grupos:
+        if not g.palavras or g.dur <= alvo_s * 1.5:
+            saida.append(g)
+            continue
+        n = max(1, round(g.dur / alvo_s))
+        passo = g.dur / n
+        blocos: list[list[dict]] = [[] for _ in range(n)]
+        for w in g.palavras:
+            meio = (w["start"] + w["end"]) / 2
+            blocos[min(n - 1, max(0, int((meio - g.start) / passo)))].append(w)
+        saida += [_de_palavras(b, g.indices) for b in blocos if b]
+    return saida
+
+
+def _de_palavras(palavras: list[dict], indices: list[int]) -> Grupo:
+    texto = " ".join(" ".join(w["word"] for w in palavras).split())
+    return Grupo(palavras[0]["start"], palavras[-1]["end"], [texto], list(palavras), indices)
+
+
 def fundir_curtas(grupos: list[Grupo], r: Ritmo) -> list[Grupo]:
     if not r.fundir_curtas:
         return grupos
@@ -181,10 +205,14 @@ def executar(projeto_id: str, force: bool = False) -> None:
 
     grupos = agrupar_por_pausa(segmentos, r.pausa_corte_s)
     n_pausa = len(grupos)
-    grupos = dividir_longas(grupos, segmentos, r)
-    n_div = len(grupos)
-    grupos = fundir_curtas(grupos, r)
-    n_fund = len(grupos)
+    if projeto.decisao.provedor == "externo":
+        grupos = dividir_em_blocos(grupos, BLOCO_EXTERNO_S)
+        n_div = n_fund = len(grupos)
+    else:
+        grupos = dividir_longas(grupos, segmentos, r)
+        n_div = len(grupos)
+        grupos = fundir_curtas(grupos, r)
+        n_fund = len(grupos)
     cenas = montar_cenas(grupos, t.audio.duracao_s, r)
 
     t.cenas = cenas
