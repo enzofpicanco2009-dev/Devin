@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "id": "estilo_didatico",
+  "nome": "Didático",
+  "descricao": "Cenas de 4–6s, animações calmas. Educação e finanças.",
+  "ritmo": {
+    "duracao_cena_min_s": 1.5,
+    "duracao_cena_max_s": 8.0,
+    "duracao_cena_alvo_s": 4.5,
+    "pausa_corte_s": 0.4
+  },
+  "animacao": {
+    "velocidade": 1.0
+  },
+  "densidade_visual": "media"
+}

@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "id": "tema_escuro_dourado",
+  "nome": "Escuro Dourado",
+  "descricao": "Sério e premium. Fundo quase preto, destaque dourado.",
+  "cores": {
+    "fundo": "#0D0D0D",
+    "fundo_secundario": "#1A1A1A",
+    "texto": "#FFFFFF",
+    "texto_secundario": "#B3B3B3",
+    "destaque": "#F5C042",
+    "destaque_2": "#42A5F5",
+    "positivo": "#2ECC71",
+    "negativo": "#E74C3C",
+    "neutro": "#95A5A6"
+  },
+  "tipografia": {
+    "fonte_titulo": {
+      "familia": "Inter, Arial, sans-serif",
+      "peso": 800
+    }
+  }
+}

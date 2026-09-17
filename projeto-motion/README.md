@@ -1,0 +1,90 @@
+# projeto-motion
+
+Pipeline 100% local que transforma áudio narrado em vídeo com motion graphics:
+transcrição (faster-whisper) → cenas → decisão de template → tema visual → render (Remotion) → mixagem (FFmpeg).
+
+Plano de arquitetura completo: `docs/plano_arquitetura.md`.
+
+## Requisitos
+
+- Node.js 20+, Python 3.10+, FFmpeg
+- `pip install -r requirements.txt` (em um venv)
+- `cd remotion && npm install`
+
+## Uso pelo navegador (recomendado)
+
+```bash
+.venv/bin/python -m app          # abre em http://localhost:8000
+```
+
+Envie o áudio, escolha o **design** (`config/temas/`), o **ritmo** (`config/estilos/`) e os
+formatos, clique em *Gerar vídeo* e acompanhe o progresso. Os vídeos ficam em "Meus vídeos"
+(pasta `projetos/<id>/saida/`). Para adicionar um design novo, basta criar um JSON em `config/temas/`.
+
+Na tela inicial você também escolhe o **canal** (preset com público, CTA e design padrão — crie novos
+pela própria interface, ficam em `config/canais/`), troca **paleta de cores e fonte** por cima do tema,
+e envia **imagens do vídeo** com palavras-chave (entram na cena quando a narração fala delas).
+Durante a produção, o painel *Produção ao vivo* mostra o roteiro cena a cena e o frame renderizado de cada uma.
+
+### Quem escreve o roteiro das cenas
+
+No passo 7 da tela de novo vídeo:
+
+- **Outra IA (ChatGPT, Gemini, Claude…)** — padrão. O botão vira *Transcrever áudio*; ao terminar,
+  aparece a **transcrição minutada** em blocos de ~3 s (`#1 [0.0-3.4] …`) — a IA decide livremente quais blocos formam cada cena e o botão **Copiar prompt
+  completo**, que já inclui a transcrição, a lista de templates e o formato de resposta. Cole na IA,
+  copie o JSON devolvido (`{"cenas": [{"segmentos": [1, 2], "template": "...", "dados": {...}}]}`),
+  cole no campo *Roteiro devolvido pela IA* e clique em *Gerar vídeo com este roteiro*. O JSON é
+  validado (templates, campos, números dos trechos); os tempos continuam vindo do Whisper.
+- **IA local (Ollama)** — instale o [Ollama](https://ollama.com) e baixe um modelo
+  (`ollama pull qwen2.5:7b`); a etapa de roteiro roda no seu PC sem sair da aplicação.
+- **Automático por regras** — sem IA; escolhe o template por padrões da fala.
+
+Em todos os modos o texto falado **não** vai para a tela; cada cena mostra o que o roteiro definiu.
+
+## Uso pela linha de comando
+
+```bash
+# 1. cria a pasta do projeto (projetos/<id>/) e coloca o áudio em entrada/
+python -m pipeline novo --projeto meu_video --canal canal_exemplo --tema tema_neon_tech --estilo estilo_dinamico
+cp narracao.wav projetos/meu_video/entrada/audio.wav
+
+# 2. roda tudo (m01 → m04 → m09 → m12 → m13 → m14)
+python -m pipeline run --projeto meu_video
+
+# ou etapa a etapa
+python -m pipeline m01 --projeto meu_video            # transcreve (cache/transcricao.json)
+python -m pipeline m04 --projeto meu_video            # cenas -> timeline.json
+python -m pipeline m09 --projeto meu_video            # escolhe template por cena
+python -m pipeline m12 --projeto meu_video --formato 9x16   # aplica tema (props finais)
+python -m pipeline m13 --projeto meu_video --formato 9x16   # render Remotion
+python -m pipeline m14 --projeto meu_video --formato 9x16   # mixa áudio -> saida/final_9x16.mp4
+python -m pipeline validar --projeto meu_video
+```
+
+`timeline.json` é a fonte de verdade: você pode editar texto, template ou props de uma cena
+e rodar novamente a partir de `m12`.
+
+## Estrutura
+
+| Pasta | Conteúdo |
+|---|---|
+| `pipeline/` | módulos Python (m01, m04, m08, m09, m12, m13, m14) + CLI |
+| `remotion/` | composição única `Video` + templates em `src/templates/` (registry estático) |
+| `config/` | defaults e configs por canal (DNA, estilo, tema) |
+| `catalogo/templates.json` | catálogo de animações (implementadas e planejadas) |
+| `biblioteca/imagens/<canal>/catalogo.json` | imagens do canal com tags, tipo, crédito, ponto focal |
+| `projetos/<id>/` | entrada, cache, timeline.json e saida |
+
+## Testes
+
+```bash
+python -m pytest tests
+cd remotion && npm run lint && npm test
+```
+
+## Estado
+
+Implementado: MVP com o template `TituloImpacto`, formatos 16:9 e 9:16, sem gaps e com duração
+igual ao áudio. Motor de decisão por IA, templates gráficos/imagem e editor de revisão estão
+descritos no catálogo e no plano, ainda não implementados.

@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Motion Studio</title>
+<link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+<header class="topo">
+  <div class="marca"><span class="logo"></span> Motion Studio</div>
+  <nav>
+    <button class="link ativo" data-tela="novo">Novo vídeo</button>
+    <button class="link" data-tela="biblioteca">Meus vídeos</button>
+  </nav>
+</header>
+
+<main>
+  <!-- ======== TELA: NOVO VÍDEO ======== -->
+  <section id="tela-novo" class="tela">
+    <h1>Transforme sua narração em vídeo</h1>
+    <p class="sub">Envie o áudio, escolha o visual e receba o vídeo pronto. Sem timeline, sem editor.</p>
+
+    <form id="form" class="passos">
+      <!-- Passo 1 -->
+      <div class="passo">
+        <div class="passo-cab"><span class="num">1</span><h2>Áudio da narração</h2></div>
+        <label id="drop" class="drop">
+          <input type="file" id="audio" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac,.opus,.mp4,.webm" hidden />
+          <div class="drop-vazio">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12m0-12 4 4m-4-4-4 4M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/></svg>
+            <strong>Arraste o áudio aqui</strong>
+            <span>ou clique para escolher · MP3, WAV, M4A…</span>
+          </div>
+          <div class="drop-cheio" hidden>
+            <div class="onda"></div>
+            <div class="arq"><strong id="arq-nome"></strong><span id="arq-info"></span></div>
+            <button type="button" class="trocar" id="trocar">Trocar</button>
+          </div>
+        </label>
+        <input type="text" id="titulo" class="campo" placeholder="Nome do vídeo (opcional)" maxlength="80" />
+      </div>
+
+      <!-- Passo 2: canal -->
+      <div class="passo">
+        <div class="passo-cab"><span class="num">2</span><h2>Para qual canal?</h2></div>
+        <p class="dica">O canal é um preset: guarda o design padrão, o público e a chamada final.</p>
+        <div id="canais" class="cards canais"></div>
+        <details id="novo-canal" class="avancado">
+          <summary>+ Criar novo canal</summary>
+          <div class="grade-canal">
+            <input type="text" id="nc-nome" class="campo" placeholder="Nome do canal" maxlength="60" />
+            <input type="text" id="nc-publico" class="campo" placeholder="Público (ex.: iniciantes em investimentos)" maxlength="120" />
+            <input type="text" id="nc-cta" class="campo" placeholder="Chamada final (ex.: Inscreva-se)" maxlength="80" />
+            <select id="nc-tom" class="campo">
+              <option value="direto">Tom direto</option>
+              <option value="descontraído">Tom descontraído</option>
+              <option value="formal">Tom formal</option>
+              <option value="inspirador">Tom inspirador</option>
+            </select>
+            <button type="button" id="nc-criar" class="btn">Criar canal com o design escolhido abaixo</button>
+            <span id="nc-erro" class="erro"></span>
+          </div>
+        </details>
+      </div>
+
+      <!-- Passo 3: design -->
+      <div class="passo">
+        <div class="passo-cab"><span class="num">3</span><h2>Design</h2></div>
+        <p class="dica">Comece por um tema pronto. Depois, se quiser, troque a paleta de cores e a fonte.</p>
+        <div id="temas" class="cards temas"></div>
+        <h3 class="sub-h">Paleta de cores <small>(opcional — substitui as cores do tema)</small></h3>
+        <div id="paletas" class="paletas"></div>
+        <h3 class="sub-h">Fonte <small>(opcional)</small></h3>
+        <div id="fontes" class="fontes"></div>
+        <div class="amostra" id="amostra"><span class="am-titulo">A Selic <em>define</em> tudo</span><span class="am-num">13,75%</span></div>
+      </div>
+
+      <!-- Passo 4: ritmo -->
+      <div class="passo">
+        <div class="passo-cab"><span class="num">4</span><h2>Ritmo da edição</h2></div>
+        <div id="estilos" class="cards estilos"></div>
+      </div>
+
+      <!-- Passo 5: imagens -->
+      <div class="passo">
+        <div class="passo-cab"><span class="num">5</span><h2>Imagens deste vídeo <small>(opcional)</small></h2></div>
+        <p class="dica">Logos, fotos, prints. Marque com palavras-chave: quando a narração falar delas, a imagem entra na cena.</p>
+        <label class="drop drop-img">
+          <input type="file" id="imagens" accept="image/*" multiple hidden />
+          <strong>Arraste imagens aqui</strong><span>ou clique para escolher · PNG, JPG, WEBP, SVG</span>
+        </label>
+        <div id="lista-imagens" class="lista-imagens"></div>
+      </div>
+
+      <!-- Passo 6: publicar -->
+      <div class="passo">
+        <div class="passo-cab"><span class="num">6</span><h2>Onde vai publicar</h2></div>
+        <div id="formatos" class="chips"></div>
+        <details class="avancado">
+          <summary>Opções avançadas</summary>
+          <label>Qualidade da transcrição
+            <select id="modelo">
+              <option value="tiny">Rápida (tiny)</option>
+              <option value="base">Boa (base)</option>
+              <option value="small" selected>Ótima (small) — recomendado</option>
+              <option value="medium">Máxima (medium, lento)</option>
+            </select>
+          </label>
+        </details>
+      </div>
+
+      <!-- Passo 7: roteiro -->
+      <div class="passo">
+        <div class="passo-cab"><span class="num">7</span><h2>Quem escreve o roteiro das cenas</h2></div>
+        <div id="roteiro-modos" class="cards">
+          <button type="button" class="card" data-id="externo"><div class="info"><strong>Outra IA (ChatGPT, Gemini…)</strong><small>Transcrevo o áudio, você copia o prompt, cola o roteiro que a IA devolver e eu gero o vídeo.</small></div></button>
+          <button type="button" class="card" data-id="ia"><div class="info"><strong>IA local (Ollama)</strong><small id="ia-rotulo">Roda no seu PC, sem custo.</small></div></button>
+          <button type="button" class="card" data-id="regras"><div class="info"><strong>Automático por regras</strong><small>Sem IA: recorta a fala e escolhe o template por padrões (mais simples).</small></div></button>
+        </div>
+      </div>
+
+      <div class="acao">
+        <button type="submit" id="gerar" class="btn-principal" disabled>Gerar vídeo</button>
+        <span id="erro-form" class="erro"></span>
+      </div>
+    </form>
+  </section>
+
+  <!-- ======== TELA: PROGRESSO / RESULTADO ======== -->
+  <section id="tela-progresso" class="tela" hidden>
+    <a href="#" class="voltar" data-tela="novo">← Novo vídeo</a>
+    <h1 id="prog-titulo"></h1>
+    <p class="sub" id="prog-sub"></p>
+
+    <ol id="etapas" class="etapas"></ol>
+    <pre id="log" class="log" hidden></pre>
+
+    <section id="externo" class="externo" hidden>
+      <div class="av-cab"><h2>Roteiro com outra IA</h2><span id="ext-status" class="tag"></span></div>
+      <p class="dica">1) Copie o prompt (já vem com a transcrição minutada). 2) Cole no ChatGPT, Gemini ou Claude. 3) Cole aqui o JSON que a IA responder e clique em Gerar.</p>
+      <div class="ext-grid">
+        <div class="ext-col">
+          <div class="ext-cab"><strong>Transcrição minutada</strong><span><button type="button" class="btn" id="ext-copiar-transcricao">Copiar transcrição</button> <button type="button" class="btn-principal" id="ext-copiar-prompt">Copiar prompt completo</button></span></div>
+          <textarea id="ext-transcricao" class="campo ext-area" readonly spellcheck="false"></textarea>
+          <details class="avancado"><summary>Ver o prompt que será copiado</summary><textarea id="ext-prompt" class="campo ext-area" readonly spellcheck="false"></textarea></details>
+        </div>
+        <div class="ext-col">
+          <div class="ext-cab"><strong>Roteiro devolvido pela IA (JSON)</strong></div>
+          <textarea id="ext-roteiro" class="campo ext-area" placeholder='Cole aqui a resposta da IA, começando com {"cenas": [ ...' spellcheck="false"></textarea>
+          <div class="acao"><button type="button" class="btn-principal" id="ext-gerar">Gerar vídeo com este roteiro</button><span id="ext-erro" class="erro"></span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="ao-vivo" class="ao-vivo" hidden>
+      <div class="av-cab"><h2>Produção ao vivo</h2><span id="av-modo" class="tag"></span></div>
+      <p class="dica" id="av-dica"></p>
+      <div id="av-rerender" class="av-rerender" hidden>
+        <span><strong id="av-rerender-n"></strong> — o vídeo ainda mostra a versão antiga.</span>
+        <button class="btn-principal" onclick="rerenderizar()">Renderizar de novo</button>
+      </div>
+      <div id="storyboard" class="storyboard"></div>
+    </section>
+    <div id="prog-erro" class="erro-box" hidden></div>
+
+    <div id="resultado" class="resultado" hidden></div>
+  </section>
+
+  <!-- ======== TELA: BIBLIOTECA ======== -->
+  <section id="tela-biblioteca" class="tela" hidden>
+    <h1>Meus vídeos</h1>
+    <p class="sub">Tudo que já foi gerado nesta máquina.</p>
+    <div id="lista" class="lista"></div>
+  </section>
+</main>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

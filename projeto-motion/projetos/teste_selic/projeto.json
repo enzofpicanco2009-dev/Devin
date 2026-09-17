@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "id": "teste_selic",
+  "canal_id": "canal_exemplo",
+  "titulo_trabalho": "teste_selic",
+  "entrada": {
+    "audio": "entrada/audio.wav",
+    "idioma": "pt"
+  },
+  "formatos": [
+    {
+      "id": "16x9",
+      "largura": 1920,
+      "altura": 1080,
+      "fps": 30,
+      "plataforma": "youtube"
+    },
+    {
+      "id": "9x16",
+      "largura": 1080,
+      "altura": 1920,
+      "fps": 30,
+      "plataforma": "shorts"
+    }
+  ],
+  "formato_principal": "16x9",
+  "transcricao": {
+    "modelo": "small"
+  },
+  "decisao": {
+    "provedor": "ollama",
+    "modelo": null,
+    "temperatura": 0.3,
+    "template_fixo": null
+  }
+}

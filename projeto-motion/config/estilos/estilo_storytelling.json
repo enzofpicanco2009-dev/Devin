@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "id": "estilo_storytelling",
+  "nome": "Storytelling",
+  "descricao": "Cenas longas, fades lentos. Histórias e documentário.",
+  "ritmo": {
+    "duracao_cena_min_s": 2.5,
+    "duracao_cena_max_s": 10.0,
+    "duracao_cena_alvo_s": 6.0,
+    "pausa_corte_s": 0.6
+  },
+  "animacao": {
+    "velocidade": 0.7,
+    "entrada_frames": 24,
+    "saida_frames": 18
+  },
+  "densidade_visual": "baixa"
+}

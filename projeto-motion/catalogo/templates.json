@@ -1,0 +1,1059 @@
+{
+  "schema_version": 1,
+  "_nota": "status: implementado | planejado. Só templates 'implementado' podem ser escolhidos. Props semânticas nunca contêm cor/fonte/asset — isso é aplicado pelo m12 via tema. Campos de imagem referenciam ids em biblioteca/imagens/<canal>/catalogo.json.",
+  "categorias": [
+    "texto",
+    "numero",
+    "grafico",
+    "diagrama",
+    "desenho",
+    "imagem",
+    "estrutura",
+    "narrador"
+  ],
+  "tipos_conteudo": [
+    "definicao",
+    "afirmacao",
+    "pergunta",
+    "numero",
+    "serie_dados",
+    "proporcao",
+    "ranking",
+    "lista",
+    "sequencia",
+    "comparacao",
+    "causa_efeito",
+    "citacao",
+    "exemplo",
+    "opiniao",
+    "transicao",
+    "cta",
+    "objeto_visual",
+    "entidade_visual"
+  ],
+  "fases": [
+    "gancho",
+    "desenvolvimento",
+    "climax",
+    "conclusao",
+    "cta"
+  ],
+  "templates": [
+    {
+      "id": "TextoCorrido",
+      "status": "implementado",
+      "categoria": "texto",
+      "descricao_para_llm": "Resumo de 1 frase com barra lateral; fallback para explicações corridas sem número nem lista.",
+      "duracao_s": [
+        3,
+        10
+      ],
+      "tipos_conteudo": [
+        "definicao",
+        "explicacao",
+        "exemplo",
+        "opiniao"
+      ],
+      "fases": [
+        "desenvolvimento",
+        "conclusao"
+      ],
+      "props": {
+        "texto": "string(max 20 palavras)",
+        "destaque": "string[]? (max 2)"
+      }
+    },
+    {
+      "id": "TituloImpacto",
+      "status": "implementado",
+      "categoria": "texto",
+      "descricao_para_llm": "Frase curta e forte em tela cheia. Ganchos, definições, afirmações centrais. Máx 20 palavras.",
+      "duracao_s": [
+        1.5,
+        10
+      ],
+      "tipos_conteudo": [
+        "definicao",
+        "afirmacao",
+        "transicao",
+        "cta",
+        "opiniao"
+      ],
+      "fases": [
+        "gancho",
+        "desenvolvimento",
+        "climax",
+        "conclusao"
+      ],
+      "props": {
+        "texto": "string(max 20 palavras)",
+        "enfase": "baixa|media|alta",
+        "palavras_destaque": "string[](max 3)"
+      }
+    },
+    {
+      "id": "PalavraPorPalavra",
+      "status": "planejado",
+      "categoria": "texto",
+      "descricao_para_llm": "Cada palavra aparece no instante em que é falada (legenda kinetic).",
+      "duracao_s": [
+        1,
+        12
+      ],
+      "tipos_conteudo": [
+        "afirmacao",
+        "exemplo",
+        "opiniao"
+      ],
+      "fases": [
+        "gancho",
+        "desenvolvimento",
+        "climax"
+      ],
+      "props": {
+        "usar_palavras_da_cena": "true",
+        "palavras_destaque": "string[]"
+      }
+    },
+    {
+      "id": "FraseComDestaque",
+      "status": "planejado",
+      "categoria": "texto",
+      "descricao_para_llm": "Frase normal com uma palavra circulada/sublinhada à mão.",
+      "duracao_s": [
+        2,
+        8
+      ],
+      "tipos_conteudo": [
+        "afirmacao",
+        "definicao"
+      ],
+      "fases": [
+        "desenvolvimento",
+        "climax"
+      ],
+      "props": {
+        "texto": "string",
+        "palavra_destaque": "string",
+        "marcacao": "circulo|sublinhado|caixa"
+      }
+    },
+    {
+      "id": "Pergunta",
+      "status": "implementado",
+      "categoria": "texto",
+      "descricao_para_llm": "Interrogação grande pulsando, depois a pergunta. Cria expectativa.",
+      "duracao_s": [
+        2,
+        6
+      ],
+      "tipos_conteudo": [
+        "pergunta"
+      ],
+      "fases": [
+        "gancho",
+        "desenvolvimento"
+      ],
+      "props": {
+        "texto": "string(max 15 palavras)"
+      }
+    },
+    {
+      "id": "Citacao",
+      "status": "implementado",
+      "categoria": "texto",
+      "descricao_para_llm": "Frase entre aspas com autor e foto opcional.",
+      "duracao_s": [
+        3,
+        10
+      ],
+      "tipos_conteudo": [
+        "citacao"
+      ],
+      "fases": [
+        "desenvolvimento",
+        "climax",
+        "conclusao"
+      ],
+      "props": {
+        "texto": "string(max 30 palavras)",
+        "autor": "string",
+        "fonte": "string?",
+        "imagem_autor": "imagem_id?"
+      }
+    },
+    {
+      "id": "Definicao",
+      "status": "planejado",
+      "categoria": "texto",
+      "descricao_para_llm": "Termo em cima, significado embaixo em fonte menor.",
+      "duracao_s": [
+        3,
+        8
+      ],
+      "tipos_conteudo": [
+        "definicao"
+      ],
+      "fases": [
+        "desenvolvimento"
+      ],
+      "props": {
+        "termo": "string(max 4 palavras)",
+        "significado": "string(max 25 palavras)"
+      }
+    },
+    {
+      "id": "NumeroDestaque",
+      "status": "implementado",
+      "categoria": "numero",
+      "descricao_para_llm": "Número grande que conta até o valor, com rótulo.",
+      "duracao_s": [
+        2,
+        8
+      ],
+      "tipos_conteudo": [
+        "numero"
+      ],
+      "fases": [
+        "desenvolvimento",
+        "climax"
+      ],
+      "props": {
+        "valor": "number",
+        "formato": "inteiro|decimal|percentual|moeda",
+        "prefixo": "string?",
+        "sufixo": "string?",
+        "rotulo": "string(max 8 palavras)",
+        "sentimento": "positivo|negativo|neutro",
+        "icone": "icone_semantico?"
+      }
+    },
+    {
+      "id": "ComparacaoDoisLados",
+      "status": "implementado",
+      "categoria": "numero",
+      "descricao_para_llm": "A vs B lado a lado, cada um com rótulo, valor e sentimento.",
+      "duracao_s": [
+        3,
+        8
+      ],
+      "tipos_conteudo": [
+        "comparacao"
+      ],
+      "fases": [
+        "desenvolvimento",
+        "climax"
+      ],
+      "props": {
+        "lado_a": {
+          "rotulo": "string",
+          "valor": "string|number",
+          "sentimento": "enum",
+          "itens": "string[]? (max 4)"
+        },
+        "lado_b": {
+          "rotulo": "string",
+          "valor": "string|number",
+          "sentimento": "enum",
+          "itens": "string[]? (max 4)"
+        }
+      }
+    },
+    {
+      "id": "AntesDepois",
+      "status": "planejado",
+      "categoria": "numero",
+      "descricao_para_llm": "Valor antigo riscado -> seta -> valor novo.",
+      "duracao_s": [
+        2,
+        6
+      ],
+      "tipos_conteudo": [
+        "comparacao",
+        "serie_dados"
+      ],
+      "fases": [
+        "desenvolvimento",
+        "climax"
+      ],
+      "props": {
+        "antes": "string|number",
+        "depois": "string|number",
+        "rotulo": "string?",
+        "direcao": "sobe|desce|neutro"
+      }
+    },
+    {
+      "id": "PercentualCirculo",
+      "status": "planejado",
+      "categoria": "numero",
+      "descricao_para_llm": "Anel que preenche até X%.",
+      "duracao_s": [
+        2,
+        6
+      ],
+      "tipos_conteudo": [
+        "numero",
+        "proporcao"
+      ],
+      "fases": [
+        "desenvolvimento"
+      ],
+      "props": {
+        "percentual": "number(0-100)",
+        "rotulo": "string"
+      }
+    },
+    {
+      "id": "BarraProgresso",
+      "status": "planejado",
+      "categoria": "numero",
+      "descricao_para_llm": "Barra horizontal preenchendo até um marco/meta.",
+      "duracao_s": [
+        2,
+        6
+      ],
+      "tipos_conteudo": [
+        "numero",
+        "proporcao"
+      ],
+      "fases": [
+        "desenvolvimento"
+      ],
+      "props": {
+        "atual": "number",
+        "meta": "number",
+        "rotulo": "string",
+        "unidade": "string?"
+      }
+    },
+    {
+      "id": "GraficoBarras",
+      "status": "implementado",
+      "categoria": "grafico",
+      "descricao_para_llm": "Barras crescem uma a uma com valor em cima. 2 a 6 barras.",
+      "duracao_s": [
+        3,
+        10
+      ],
+      "tipos_conteudo": [
+        "serie_dados",
+        "comparacao",
+        "ranking"
+      ],
+      "fases": [
+        "desenvolvimento",
+        "climax"
+      ],
+      "props": {
+        "titulo": "string?",
+        "barras": "[{rotulo, valor, sentimento?}](2-6)",
+        "unidade": "string?",
+        "destacar_indice": "int?"
+      }
+    },
+    {
+      "id": "GraficoLinha",
+      "status": "planejado",
+      "categoria": "grafico",
+      "descricao_para_llm": "Linha se desenha da esquerda para a direita mostrando tendência.",
+      "duracao_s": [
+        3,
+        10
+      ],
+      "tipos_conteudo": [
+        "serie_dados"
+      ],
+      "fases": [
+        "desenvolvimento",
+        "climax"
+      ],
+      "props": {
+        "titulo": "string?",
+        "pontos": "[{rotulo, valor}](2-12)",
+        "unidade": "string?",
+        "direcao": "sobe|desce|oscila"
+      }
+    },
+    {
+      "id": "GraficoPizza",
+      "status": "planejado",
+      "categoria": "grafico",
+      "descricao_para_llm": "Fatias abrem em sequência com legenda. Partes de um todo.",
+      "duracao_s": [
+        3,
+        8
+      ],
+      "tipos_conteudo": [
+        "proporcao"
+      ],
+      "fases": [
+        "desenvolvimento"
+      ],
+      "props": {
+        "titulo": "string?",
+        "fatias": "[{rotulo, percentual}](2-6)",
+        "estilo": "pizza|rosca"
+      }
+    },
+    {
+      "id": "BarrasEmpilhadas",
+      "status": "planejado",
+      "categoria": "grafico",
+      "descricao_para_llm": "Uma barra dividida em partes coloridas (composição).",
+      "duracao_s": [
+        3,
+        8
+      ],
+      "tipos_conteudo": [
+        "proporcao"
+      ],
+      "fases": [
+        "desenvolvimento"
+      ],
+      "props": {
+        "titulo": "string?",
+        "partes": "[{rotulo, valor}](2-6)"
+      }
+    },
+    {
+      "id": "Ranking",
+      "status": "planejado",
+      "categoria": "grafico",
+      "descricao_para_llm": "Lista ordenada com barras proporcionais; pode animar reordenação.",
+      "duracao_s": [
+        3,
+        10
+      ],
+      "tipos_conteudo": [
+        "ranking"
+      ],
+      "fases": [
+        "desenvolvimento",
+        "climax"
+      ],
+      "props": {
+        "titulo": "string?",
+        "itens": "[{rotulo, valor}](2-8)",
+        "ordem": "desc|asc"
+      }
+    },
+    {
+      "id": "LinhaDoTempo",
+      "status": "planejado",
+      "categoria": "grafico",
+      "descricao_para_llm": "Eixo horizontal com datas/eventos surgindo em sequência.",
+      "duracao_s": [
+        3,
+        12
+      ],
+      "tipos_conteudo": [
+        "sequencia",
+        "serie_dados"
+      ],
+      "fases": [
+        "desenvolvimento"
+      ],
+      "props": {
+        "eventos": "[{data, texto(max 6 palavras)}](2-6)"
+      }
+    },
+    {
+      "id": "MapaSimples",
+      "status": "planejado",
+      "categoria": "grafico",
+      "descricao_para_llm": "Silhueta de país/estado com pontos pulsando em locais.",
+      "duracao_s": [
+        3,
+        8
+      ],
+      "tipos_conteudo": [
+        "entidade_visual",
+        "lista"
+      ],
+      "fases": [
+        "desenvolvimento"
+      ],
+      "props": {
+        "regiao": "brasil|mundo|estado:<UF>",
+        "pontos": "[{nome, rotulo?}](1-8)"
+      }
+    },
+    {
+      "id": "SetaTendencia",
+      "status": "implementado",
+      "categoria": "diagrama",
+      "descricao_para_llm": "Seta grande subindo (positivo) ou descendo (negativo), com número.",
+      "duracao_s": [
+        1.5,
+        5
+      ],
+      "tipos_conteudo": [
+        "numero",
+        "afirmacao"
+      ],
+      "fases": [
+        "gancho",
+        "desenvolvimento",
+        "climax"
+      ],
+      "props": {
+        "direcao": "sobe|desce",
+        "valor": "string?",
+        "rotulo": "string?",
+        "sentimento": "positivo|negativo"
+      }
+    },
+    {
+      "id": "Fluxo",
+      "status": "planejado",
+      "categoria": "diagrama",
+      "descricao_para_llm": "Caixas A -> B -> C ligadas por setas que se desenham. Processos, causa-efeito.",
+      "duracao_s": [
+        3,
+        10
+      ],
+      "tipos_conteudo": [
+        "sequencia",
+        "causa_efeito"
+      ],
+      "fases": [
+        "desenvolvimento"
+      ],
+      "props": {
+        "etapas": "[string(max 4 palavras)](2-5)",
+        "orientacao": "horizontal|vertical"
+      }
+    },
+    {
+      "id": "Ciclo",
+      "status": "planejado",
+      "categoria": "diagrama",
+      "descricao_para_llm": "3 a 5 etapas em círculo com seta girando.",
+      "duracao_s": [
+        3,
+        10
+      ],
+      "tipos_conteudo": [
+        "sequencia",
+        "causa_efeito"
+      ],
+      "fases": [
+        "desenvolvimento"
+      ],
+      "props": {
+        "etapas": "[string(max 4 palavras)](3-5)"
+      }
+    },
+    {
+      "id": "Piramide",
+      "status": "planejado",
+      "categoria": "diagrama",
+      "descricao_para_llm": "Níveis empilhados aparecendo de baixo para cima (hierarquia).",
+      "duracao_s": [
+        3,
+        8
+      ],
+      "tipos_conteudo": [
+        "ranking",
+        "lista"
+      ],
+      "fases": [
+        "desenvolvimento"
+      ],
+      "props": {
+        "niveis": "[string(max 4 palavras)](2-5) base->topo"
+      }
+    },
+    {
+      "id": "Balanca",
+      "status": "planejado",
+      "categoria": "diagrama",
+      "descricao_para_llm": "Balança com dois lados; inclina para o lado mais pesado.",
+      "duracao_s": [
+        2,
+        6
+      ],
+      "tipos_conteudo": [
+        "comparacao"
+      ],
+      "fases": [
+        "desenvolvimento",
+        "climax"
+      ],
+      "props": {
+        "lado_a": "string",
+        "lado_b": "string",
+        "vencedor": "a|b|empate"
+      }
+    },
+    {
+      "id": "Funil",
+      "status": "planejado",
+      "categoria": "diagrama",
+      "descricao_para_llm": "Etapas afunilando com quantidades decrescentes.",
+      "duracao_s": [
+        3,
+        8
+      ],
+      "tipos_conteudo": [
+        "sequencia",
+        "serie_dados"
+      ],
+      "fases": [
+        "desenvolvimento"
+      ],
+      "props": {
+        "etapas": "[{rotulo, valor}](2-5)"
+      }
+    },
+    {
+      "id": "Venn",
+      "status": "planejado",
+      "categoria": "diagrama",
+      "descricao_para_llm": "2 ou 3 círculos sobrepostos, texto na interseção.",
+      "duracao_s": [
+        3,
+        8
+      ],
+      "tipos_conteudo": [
+        "comparacao",
+        "definicao"
+      ],
+      "fases": [
+        "desenvolvimento"
+      ],
+      "props": {
+        "conjuntos": "[string](2-3)",
+        "intersecao": "string"
+      }
+    },
+    {
+      "id": "Matriz2x2",
+      "status": "planejado",
+      "categoria": "diagrama",
+      "descricao_para_llm": "Quatro quadrantes com eixos rotulados; item aparece no quadrante certo.",
+      "duracao_s": [
+        3,
+        10
+      ],
+      "tipos_conteudo": [
+        "comparacao",
+        "lista"
+      ],
+      "fases": [
+        "desenvolvimento"
+      ],
+      "props": {
+        "eixo_x": "[string, string]",
+        "eixo_y": "[string, string]",
+        "itens": "[{texto, quadrante:1-4}](1-4)"
+      }
+    },
+    {
+      "id": "IconeDesenhado",
+      "status": "planejado",
+      "categoria": "desenho",
+      "descricao_para_llm": "Ícone se desenha linha por linha como caneta, com rótulo.",
+      "duracao_s": [
+        1.5,
+        5
+      ],
+      "tipos_conteudo": [
+        "objeto_visual",
+        "definicao"
+      ],
+      "fases": [
+        "gancho",
+        "desenvolvimento"
+      ],
+      "props": {
+        "icone": "icone_semantico",
+        "rotulo": "string?"
+      }
+    },
+    {
+      "id": "MarcacaoRabiscada",
+      "status": "planejado",
+      "categoria": "desenho",
+      "descricao_para_llm": "Círculo/sublinhado à mão sobre texto ou imagem.",
+      "duracao_s": [
+        1.5,
+        6
+      ],
+      "tipos_conteudo": [
+        "afirmacao",
+        "entidade_visual"
+      ],
+      "fases": [
+        "desenvolvimento",
+        "climax"
+      ],
+      "props": {
+        "alvo": "texto|imagem",
+        "texto": "string?",
+        "imagem": "imagem_id?",
+        "marcacao": "circulo|sublinhado|seta"
+      }
+    },
+    {
+      "id": "SetaRabiscada",
+      "status": "planejado",
+      "categoria": "desenho",
+      "descricao_para_llm": "Seta desenhada à mão apontando para um elemento.",
+      "duracao_s": [
+        1,
+        4
+      ],
+      "tipos_conteudo": [
+        "afirmacao"
+      ],
+      "fases": [
+        "desenvolvimento"
+      ],
+      "props": {
+        "texto": "string",
+        "posicao_alvo": "cima|baixo|esquerda|direita"
+      }
+    },
+    {
+      "id": "CheckOuX",
+      "status": "planejado",
+      "categoria": "desenho",
+      "descricao_para_llm": "Certo ou errado riscado à mão ao lado de um texto.",
+      "duracao_s": [
+        1.5,
+        5
+      ],
+      "tipos_conteudo": [
+        "afirmacao",
+        "opiniao",
+        "lista"
+      ],
+      "fases": [
+        "desenvolvimento",
+        "conclusao"
+      ],
+      "props": {
+        "itens": "[{texto, correto:boolean}](1-4)"
+      }
+    },
+    {
+      "id": "Quadro",
+      "status": "planejado",
+      "categoria": "desenho",
+      "descricao_para_llm": "Fundo quadro-branco; texto e traços escritos em tempo real.",
+      "duracao_s": [
+        3,
+        12
+      ],
+      "tipos_conteudo": [
+        "definicao",
+        "exemplo",
+        "causa_efeito"
+      ],
+      "fases": [
+        "desenvolvimento"
+      ],
+      "props": {
+        "texto": "string(max 20 palavras)",
+        "desenho": "icone_semantico?"
+      }
+    },
+    {
+      "id": "ImagemDestaque",
+      "status": "implementado",
+      "categoria": "imagem",
+      "descricao_para_llm": "Imagem da biblioteca com zoom lento (Ken Burns) e texto opcional.",
+      "duracao_s": [
+        2,
+        10
+      ],
+      "tipos_conteudo": [
+        "entidade_visual",
+        "exemplo"
+      ],
+      "fases": [
+        "gancho",
+        "desenvolvimento",
+        "climax"
+      ],
+      "props": {
+        "imagem": "imagem_id",
+        "texto": "string?",
+        "posicao_texto": "baixo|cima|centro"
+      }
+    },
+    {
+      "id": "ImagemAnotada",
+      "status": "planejado",
+      "categoria": "imagem",
+      "descricao_para_llm": "Imagem com seta/círculo apontando um detalhe e legenda.",
+      "duracao_s": [
+        2,
+        8
+      ],
+      "tipos_conteudo": [
+        "entidade_visual",
+        "exemplo"
+      ],
+      "fases": [
+        "desenvolvimento"
+      ],
+      "props": {
+        "imagem": "imagem_id",
+        "ponto": "{x:0-1, y:0-1}",
+        "texto": "string",
+        "marcacao": "circulo|seta"
+      }
+    },
+    {
+      "id": "GradeImagens",
+      "status": "planejado",
+      "categoria": "imagem",
+      "descricao_para_llm": "2 a 6 imagens aparecendo em grade (ex: logos).",
+      "duracao_s": [
+        2,
+        8
+      ],
+      "tipos_conteudo": [
+        "lista",
+        "entidade_visual"
+      ],
+      "fases": [
+        "desenvolvimento"
+      ],
+      "props": {
+        "imagens": "[imagem_id](2-6)",
+        "rotulos": "[string]?"
+      }
+    },
+    {
+      "id": "ImagemComparada",
+      "status": "planejado",
+      "categoria": "imagem",
+      "descricao_para_llm": "Duas imagens lado a lado ou com cortina deslizante.",
+      "duracao_s": [
+        2,
+        8
+      ],
+      "tipos_conteudo": [
+        "comparacao"
+      ],
+      "fases": [
+        "desenvolvimento",
+        "climax"
+      ],
+      "props": {
+        "imagem_a": "imagem_id",
+        "imagem_b": "imagem_id",
+        "rotulo_a": "string?",
+        "rotulo_b": "string?",
+        "modo": "lado_a_lado|cortina"
+      }
+    },
+    {
+      "id": "ImagemRecortada",
+      "status": "planejado",
+      "categoria": "imagem",
+      "descricao_para_llm": "PNG sem fundo flutuando com sombra, texto ao lado.",
+      "duracao_s": [
+        2,
+        8
+      ],
+      "tipos_conteudo": [
+        "entidade_visual",
+        "objeto_visual"
+      ],
+      "fases": [
+        "gancho",
+        "desenvolvimento"
+      ],
+      "props": {
+        "imagem": "imagem_id(sem_fundo)",
+        "texto": "string",
+        "lado_imagem": "esquerda|direita"
+      }
+    },
+    {
+      "id": "PrintDeTela",
+      "status": "planejado",
+      "categoria": "imagem",
+      "descricao_para_llm": "Screenshot dentro de moldura de navegador/celular, com zoom em região.",
+      "duracao_s": [
+        2,
+        10
+      ],
+      "tipos_conteudo": [
+        "exemplo",
+        "entidade_visual"
+      ],
+      "fases": [
+        "desenvolvimento"
+      ],
+      "props": {
+        "imagem": "imagem_id(print)",
+        "moldura": "navegador|celular|nenhuma",
+        "zoom": "{x, y, escala}?"
+      }
+    },
+    {
+      "id": "PassoAPasso",
+      "status": "planejado",
+      "categoria": "estrutura",
+      "descricao_para_llm": "Indicador '1 de 3' com título do passo.",
+      "duracao_s": [
+        1.5,
+        6
+      ],
+      "tipos_conteudo": [
+        "sequencia",
+        "transicao"
+      ],
+      "fases": [
+        "desenvolvimento"
+      ],
+      "props": {
+        "passo": "int",
+        "total": "int",
+        "titulo": "string(max 8 palavras)"
+      }
+    },
+    {
+      "id": "Capitulo",
+      "status": "planejado",
+      "categoria": "estrutura",
+      "descricao_para_llm": "Título de seção grande; marca mudança de bloco.",
+      "duracao_s": [
+        1.5,
+        4
+      ],
+      "tipos_conteudo": [
+        "transicao"
+      ],
+      "fases": [
+        "desenvolvimento"
+      ],
+      "props": {
+        "numero": "int?",
+        "titulo": "string(max 6 palavras)"
+      }
+    },
+    {
+      "id": "ChamadaAcao",
+      "status": "planejado",
+      "categoria": "estrutura",
+      "descricao_para_llm": "Inscreva-se / like / link, com ícone.",
+      "duracao_s": [
+        2,
+        6
+      ],
+      "tipos_conteudo": [
+        "cta"
+      ],
+      "fases": [
+        "cta",
+        "conclusao"
+      ],
+      "props": {
+        "texto": "string(max 10 palavras)",
+        "acao": "inscrever|like|comentar|link|proximo_video"
+      }
+    },
+    {
+      "id": "Bumper",
+      "status": "planejado",
+      "categoria": "estrutura",
+      "descricao_para_llm": "Transição curta com logo entre blocos.",
+      "duracao_s": [
+        0.8,
+        2.5
+      ],
+      "tipos_conteudo": [
+        "transicao"
+      ],
+      "fases": [
+        "desenvolvimento"
+      ],
+      "props": {
+        "texto": "string(max 4 palavras)?"
+      }
+    },
+    {
+      "id": "ListaAnimada",
+      "status": "implementado",
+      "categoria": "estrutura",
+      "descricao_para_llm": "Título + 2 a 5 itens aparecendo sincronizados com a fala.",
+      "duracao_s": [
+        3,
+        12
+      ],
+      "tipos_conteudo": [
+        "lista"
+      ],
+      "fases": [
+        "desenvolvimento"
+      ],
+      "props": {
+        "titulo": "string(max 6 palavras)?",
+        "itens": "[string(max 6 palavras)](2-5)",
+        "icone_itens": "icone_semantico",
+        "sincronizar_com_palavras": "boolean"
+      }
+    },
+    {
+      "id": "NarradorReal",
+      "status": "planejado",
+      "categoria": "narrador",
+      "tipo": "template_video_real",
+      "descricao_para_llm": "Clipe real do narrador (chroma key) com gráfico opcional ao lado.",
+      "duracao_s": [
+        2,
+        15
+      ],
+      "tipos_conteudo": [
+        "afirmacao",
+        "opiniao",
+        "cta",
+        "transicao"
+      ],
+      "fases": [
+        "gancho",
+        "climax",
+        "conclusao",
+        "cta"
+      ],
+      "props": {
+        "clip_id": "string",
+        "posicao": "centro|esquerda|direita|pip",
+        "elemento_grafico": "template_ref?"
+      },
+      "clips_metadata": {
+        "emocao": [
+          "neutro",
+          "animado",
+          "serio",
+          "surpreso",
+          "ironico"
+        ],
+        "gesto": [
+          "nenhum",
+          "apontar",
+          "contar_dedos",
+          "abrir_bracos",
+          "encolher_ombros"
+        ],
+        "olhar": [
+          "camera",
+          "esquerda",
+          "direita",
+          "baixo"
+        ],
+        "fase_compativel": "fases[]",
+        "energia": "0-1",
+        "duracao_s": "number",
+        "loopavel": "boolean"
+      }
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "id": "tema_neon_tech",
+  "nome": "Neon Tech",
+  "descricao": "Tecnologia. Azul-escuro com roxo e ciano.",
+  "cores": {
+    "fundo": "#0B1020",
+    "fundo_secundario": "#151C33",
+    "texto": "#EAF2FF",
+    "texto_secundario": "#9AA7C7",
+    "destaque": "#00E5FF",
+    "destaque_2": "#A855F7",
+    "positivo": "#2ECC71",
+    "negativo": "#E74C3C",
+    "neutro": "#95A5A6"
+  },
+  "tipografia": {
+    "fonte_titulo": {
+      "familia": "Space Grotesk, Inter, sans-serif",
+      "peso": 700
+    }
+  }
+}
