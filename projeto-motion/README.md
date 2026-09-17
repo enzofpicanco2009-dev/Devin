@@ -1,5 +1,5 @@
 # projeto-motion
-91919
+
 Pipeline 100% local que transforma áudio narrado em vídeo com motion graphics:
 transcrição (faster-whisper) → cenas → decisão de template → tema visual → render (Remotion) → mixagem (FFmpeg).
 
