@@ -69,8 +69,8 @@ main { max-width: 860px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
 
 .avancado { margin-top: 1.2rem; color: var(--texto-2); }
 .avancado summary { cursor: pointer; }
-.avancado label { display: flex; gap: 1rem; align-items: center; margin-top: .8rem; color: var(--texto); }
-.avancado select { background: var(--bg); border: 1px solid var(--borda); border-radius: 8px; padding: .4rem .6rem; }
+.avancado label, .idioma { display: flex; gap: 1rem; align-items: center; margin-top: .8rem; color: var(--texto); }
+.avancado select, .idioma select { background: var(--bg); border: 1px solid var(--borda); border-radius: 8px; padding: .4rem .6rem; }
 
 .acao { display: flex; align-items: center; gap: 1rem; }
 .btn-principal { background: var(--acento); color: #111; border: 0; padding: 1rem 2rem; border-radius: 999px; font-weight: 800; font-size: 1.05rem; cursor: pointer; transition: .15s; }

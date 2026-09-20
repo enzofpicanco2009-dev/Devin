@@ -165,6 +165,7 @@ Templates e seus dados (use exatamente estes nomes de campos):
 - MidiaCheia: {{"midia": "<id de uma imagem ou vídeo>"}}  (só a mídia, tela cheia, sem texto; vídeo roda mudo sobre a narração)
 {imagens}
 Canal: {canal}
+Escreva todos os textos das cenas no MESMO IDIOMA da transcrição (as chaves do JSON e os nomes dos templates ficam como estão).
 
 Exemplo (outro assunto) — transcrição "#1 [0.0-3.1] O café é a bebida mais consumida do país. #2 [3.1-5.0] São 21 milhões de sacas por ano. #3 [5.0-6.4] E o consumo só cresce." vira:
 {{"cenas": [

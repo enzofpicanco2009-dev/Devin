@@ -42,6 +42,7 @@ def criar_projeto(
     overrides_tema: dict | None = None,
     usar_ia: bool = True,
     roteiro_externo: bool = False,
+    idioma: str | None = "pt",
 ) -> Path:
     if not ID_PROJETO_RE.match(projeto_id):
         raise ValueError(f"ID de projeto inválido: {projeto_id!r}")
@@ -67,7 +68,7 @@ def criar_projeto(
         "id": projeto_id,
         "canal_id": canal,
         "titulo_trabalho": titulo or projeto_id,
-        "entrada": {"audio": f"entrada/{audio_nome}", "idioma": "pt"},
+        "entrada": {"audio": f"entrada/{audio_nome}", "idioma": idioma or None},
         "formatos": [FORMATOS[f] for f in formatos],
         "formato_principal": formato_principal or formatos[0],
         "tema_id": tema_id,

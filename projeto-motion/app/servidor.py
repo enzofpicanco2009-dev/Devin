@@ -42,6 +42,7 @@ ETAPAS = [
     ("m14", "Juntando com o áudio"),
 ]
 _LINHA_ETAPA = re.compile(r"^\[(m\d\d)\]")
+IDIOMAS = {"auto", "pt", "en", "es", "fr", "it", "de", "ja"}
 
 # projeto_id -> estado do job em andamento/concluído (memória do processo)
 _jobs: dict[str, dict] = {}
@@ -138,6 +139,7 @@ async def criar(
     fonte_id: str = Form(""),
     formatos: str = Form("16x9"),
     modelo: str = Form("small"),
+    idioma: str = Form("pt"),
     usar_ia: bool = Form(True),
     roteiro_modo: str = Form(""),
     imagens: list[UploadFile] = File([]),
@@ -151,6 +153,8 @@ async def criar(
         raise HTTPException(400, "Escolha ao menos um formato válido")
     if modelo not in {"tiny", "base", "small", "medium", "large-v3"}:
         raise HTTPException(400, "Modelo de transcrição inválido")
+    if idioma not in IDIOMAS:
+        raise HTTPException(400, "Idioma inválido")
     if canal_id not in {c["id"] for c in listar_canais()}:
         raise HTTPException(400, "Canal não existe")
     if roteiro_modo and roteiro_modo not in {"ia", "regras", "externo"}:
@@ -187,7 +191,8 @@ async def criar(
         try:
             criar_projeto(projeto_id, tmp_path, canal=canal_id, titulo=titulo, modelo=modelo, formatos=lista,
                           tema_id=tema_id or None, estilo_id=estilo_id or None,
-                          overrides_tema=overrides or None, usar_ia=usar_ia, roteiro_externo=externo)
+                          overrides_tema=overrides or None, usar_ia=usar_ia, roteiro_externo=externo,
+                          idioma=idioma if idioma != "auto" else None)
         except ValueError as e:
             raise HTTPException(400, str(e))
         finally:

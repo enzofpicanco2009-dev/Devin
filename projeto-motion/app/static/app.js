@@ -241,6 +241,7 @@ $("#form").addEventListener("submit", async (e) => {
   fd.append("fonte_id", estado.fonte || "");
   fd.append("formatos", [...estado.formatos].join(","));
   fd.append("modelo", $("#modelo").value);
+  fd.append("idioma", $("#idioma").value);
   fd.append("roteiro_modo", estado.roteiroModo);
   fd.append("midias_ids", [...estado.midiasSel].join(","));
   for (const m of estado.midiasNovas) fd.append("midias_novas", m.file, m.file.name);
