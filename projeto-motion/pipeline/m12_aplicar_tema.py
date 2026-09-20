@@ -230,6 +230,8 @@ def fazer_props_imagem(mapa_imagens: dict[str, str]):
 
 
 def fazer_props_midia(mapa: dict[str, str], tipos: dict[str, str]):
+    contador = {"imagens": 0}
+
     def props_midia(cena: Cena, cfg: ConfigResolvida, avisos: list[str]) -> dict:
         s = _sem(cena)
         mid = str(s.get("midia", ""))
@@ -239,7 +241,13 @@ def fazer_props_midia(mapa: dict[str, str], tipos: dict[str, str]):
             cena.decisao.template = "TituloImpacto"
             cena.decisao.props_semanticas = {"texto": s.get("texto") or cena.texto}
             return props_titulo_impacto(cena, cfg, avisos)
-        return {**props_base(cena, cfg), "src": src, "tipo": tipos.get(mid, "imagem")}
+        tipo = tipos.get(mid, "imagem")
+        props = {**props_base(cena, cfg), "src": src, "tipo": tipo}
+        if tipo == "imagem":
+            # alterna zoom in / zoom out entre as imagens do vídeo para não ficar estático
+            props["zoom"] = "in" if contador["imagens"] % 2 == 0 else "out"
+            contador["imagens"] += 1
+        return props
     return props_midia
 
 
