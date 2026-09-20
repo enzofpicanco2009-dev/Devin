@@ -156,6 +156,15 @@ main { max-width: 860px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
 .mini { background: var(--bg-3); border: 1px solid var(--borda); color: var(--texto-2); border-radius: 999px; padding: .15rem .6rem; font-size: .75rem; cursor: pointer; }
 .mini:hover { color: var(--texto); border-color: var(--acento); }
 .linha-check { display: flex; gap: .6rem; align-items: center; }
+.ext-midias { background: var(--bg); border: 1px solid var(--borda); border-radius: 12px; padding: .9rem 1rem; margin-bottom: 1rem; }
+.ext-midias .chips { margin: .5rem 0; }
+.ext-midias .chip { cursor: default; padding: .35rem .5rem .35rem .8rem; font-size: .9rem; gap: .4rem; }
+.ext-midias .chip .x { background: none; border: 0; color: var(--texto-2); font-size: 1.1rem; cursor: pointer; line-height: 1; padding: 0 .2rem; }
+.ext-midias .chip .x:hover { color: #ff7b7b; }
+.banco-mini { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); margin-top: .8rem; margin-bottom: 0; }
+.mid-btn { cursor: pointer; text-align: left; font: inherit; color: inherit; padding: 0; }
+.mid-btn:hover { border-color: var(--acento); }
+.mid-btn .mid-info { align-items: flex-start; }
 
 /* ---- produção ao vivo ---- */
 .ao-vivo { margin-top: 1.5rem; background: var(--bg-2); border: 1px solid var(--borda); border-radius: var(--raio); padding: 1.3rem 1.5rem; }
@@ -200,3 +209,4 @@ main { max-width: 860px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
 .ext-area { margin-top: .6rem; min-height: 220px; resize: vertical; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .82rem; line-height: 1.4; color: var(--texto); }
 .externo .acao { margin-top: .6rem; }
 @media (max-width: 800px) { .ext-grid { grid-template-columns: 1fr; } }
+.ext-midias .chip small { display: inline; color: var(--texto-2); font-size: .75rem; }

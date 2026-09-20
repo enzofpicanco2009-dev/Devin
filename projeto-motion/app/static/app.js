@@ -289,10 +289,51 @@ function renderExterno(p) {
   const ext = p.roteiro_externo;
   const el = $("#externo");
   if (!ext || !ext.pronto || p.estado === "rodando") { el.hidden = true; return; }
+  const primeira = el.hidden;
   el.hidden = false;
-  if ($("#ext-transcricao").value !== ext.transcricao) { $("#ext-transcricao").value = ext.transcricao; $("#ext-prompt").value = ext.prompt; }
+  if ($("#ext-transcricao").value !== ext.transcricao) $("#ext-transcricao").value = ext.transcricao;
+  if ($("#ext-prompt").value !== ext.prompt) $("#ext-prompt").value = ext.prompt;
   $("#ext-status").textContent = ext.pendente ? `${ext.trechos} trechos transcritos — aguardando o roteiro` : "roteiro aplicado — cole outro para refazer";
+  if (primeira) renderMidiasExterno();
 }
+
+async function midiasDoProjeto() {
+  estado.imagensProjeto = await (await fetch(`/api/projetos/${estado.projetoAtual}/imagens`)).json();
+  return estado.imagensProjeto;
+}
+async function renderMidiasExterno() {
+  const midias = await midiasDoProjeto();
+  $("#ext-midias-lista").innerHTML = midias.length
+    ? midias.map((m) => `<span class="chip" title="${escapar(m.descricao || "")}">${escapar(m.nome)} <small>${m.tipo === "video" ? "vídeo" : "imagem"}</small><button type="button" class="x" data-desvincular="${m.id}" title="Tirar deste vídeo">×</button></span>`).join("")
+    : `<small class="sb-pq">Nenhuma mídia neste vídeo — a IA não poderá usar imagens ou vídeos.</small>`;
+}
+$("#ext-midias-lista").addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-desvincular]"); if (!b) return;
+  await fetch(`/api/projetos/${estado.projetoAtual}/imagens/${b.dataset.desvincular}`, { method: "DELETE" });
+  await renderMidiasExterno(); atualizar(estado.projetoAtual);
+});
+$("#ext-anexar").addEventListener("click", async () => {
+  const box = $("#ext-banco");
+  if (!box.hidden) { box.hidden = true; return; }
+  await carregarBanco();
+  const ja = new Set((estado.imagensProjeto || []).map((m) => m.id));
+  const livres = estado.banco.filter((m) => !ja.has(m.id));
+  box.innerHTML = livres.length
+    ? livres.map((m) => `
+      <button type="button" class="mid-card mid-btn" data-vincular="${m.id}">
+        <span class="mid-thumb">${m.tipo === "video" ? `<video src="/api/biblioteca/${m.id}/arquivo" muted preload="metadata"></video>` : `<img src="/api/biblioteca/${m.id}/arquivo" alt="" />`}<span class="badge">${m.tipo === "video" ? "vídeo" : "imagem"}</span></span>
+        <span class="mid-info"><strong>${escapar(m.nome)}</strong><small>${escapar(m.descricao)}</small><small class="sb-pq">clique para anexar</small></span>
+      </button>`).join("")
+    : `<p class="dica">Todas as mídias do banco já estão neste vídeo. Para adicionar uma nova ao banco, use a tela “Novo vídeo”.</p>`;
+  box.hidden = false;
+});
+$("#ext-banco").addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-vincular]"); if (!b) return;
+  const r = await fetch(`/api/projetos/${estado.projetoAtual}/imagens/banco`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids: [b.dataset.vincular] }) });
+  if (!r.ok) { alert((await r.json().catch(() => ({}))).detail || "Não foi possível anexar."); return; }
+  b.remove();
+  await renderMidiasExterno(); atualizar(estado.projetoAtual);
+});
 
 // ---------- progresso / resultado ----------
 function abrirProjeto(id) {
@@ -442,7 +483,7 @@ function editorCena(c) {
 }
 function redesenharStoryboard() { renderAoVivo({ id: estado.projetoAtual, ao_vivo: estado.aoVivo, estado: "concluido", etapa: null }); }
 window.editarCena = async (id) => {
-  if (!estado.imagensProjeto) estado.imagensProjeto = await (await fetch(`/api/projetos/${estado.projetoAtual}/imagens`)).json();
+  if (!estado.imagensProjeto) await midiasDoProjeto();
   estado.editando = id; estado.editTemplate = null; redesenharStoryboard();
 };
 window.trocarTemplateEdicao = (tpl) => { estado.editTemplate = tpl; redesenharStoryboard(); };
