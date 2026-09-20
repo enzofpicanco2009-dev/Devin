@@ -15,3 +15,5 @@ projetos/*/timeline.json
 projetos/*
 !projetos/teste_selic/
 remotion/public/projetos/
+biblioteca/midias/
+biblioteca/biblioteca.json

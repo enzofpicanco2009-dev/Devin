@@ -57,6 +57,8 @@ def _resumo_tela(r: roteiro.CenaRoteiro) -> str:
         return f"{d.get('titulo', '')}: " + " · ".join(d["itens"])
     if r.template == "ImagemDestaque":
         return f"[imagem {d['imagem']}] {d.get('texto', '')}"
+    if r.template == "MidiaCheia":
+        return f"[mídia {d['midia']} em tela cheia]"
     return str(d.get("texto", ""))
 
 

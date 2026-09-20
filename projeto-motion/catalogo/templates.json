@@ -785,6 +785,28 @@
       }
     },
     {
+      "id": "MidiaCheia",
+      "status": "implementado",
+      "categoria": "imagem",
+      "descricao_para_llm": "Só a imagem ou vídeo do banco em tela cheia, sem texto (vídeo mudo sobre a narração).",
+      "duracao_s": [
+        2,
+        15
+      ],
+      "tipos_conteudo": [
+        "entidade_visual",
+        "exemplo"
+      ],
+      "fases": [
+        "gancho",
+        "desenvolvimento",
+        "climax"
+      ],
+      "props": {
+        "midia": "midia_id"
+      }
+    },
+    {
       "id": "ImagemAnotada",
       "status": "planejado",
       "categoria": "imagem",

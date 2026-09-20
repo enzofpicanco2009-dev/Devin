@@ -84,13 +84,14 @@
 
       <!-- Passo 5: imagens -->
       <div class="passo">
-        <div class="passo-cab"><span class="num">5</span><h2>Imagens deste vídeo <small>(opcional)</small></h2></div>
-        <p class="dica">Logos, fotos, prints. Marque com palavras-chave: quando a narração falar delas, a imagem entra na cena.</p>
+        <div class="passo-cab"><span class="num">5</span><h2>Imagens e vídeos <small>(opcional)</small></h2></div>
+        <p class="dica">Seu banco permanente de mídias. Marque as que podem aparecer neste vídeo: a IA recebe a <strong>descrição</strong> de cada uma para decidir quando usá-las.</p>
+        <div id="banco" class="banco"></div>
         <label class="drop drop-img">
-          <input type="file" id="imagens" accept="image/*" multiple hidden />
-          <strong>Arraste imagens aqui</strong><span>ou clique para escolher · PNG, JPG, WEBP, SVG</span>
+          <input type="file" id="midias" accept="image/*,video/mp4,video/webm,video/quicktime" multiple hidden />
+          <strong>Adicionar ao banco</strong><span>arraste ou clique · PNG, JPG, WEBP, SVG, MP4, WEBM, MOV</span>
         </label>
-        <div id="lista-imagens" class="lista-imagens"></div>
+        <div id="lista-midias" class="lista-imagens"></div>
       </div>
 
       <!-- Passo 6: publicar -->
