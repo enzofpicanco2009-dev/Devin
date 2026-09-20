@@ -42,6 +42,15 @@ No passo 7 da tela de novo vídeo:
 
 Em todos os modos o texto falado **não** vai para a tela; cada cena mostra o que o roteiro definiu.
 
+### Banco de imagens e vídeos
+
+O passo 5 mostra o seu **banco permanente** de mídias (`biblioteca/midias/` + `biblioteca/biblioteca.json`,
+fora do Git). Cada mídia tem **nome e descrição obrigatórios** — a descrição é o que a IA lê para saber o que
+ela mostra e quando usá-la. Ao criar um vídeo você marca as mídias que podem aparecer (ou adiciona novas na
+hora); só as marcadas são copiadas para o projeto e listadas no prompt, com id, tipo, nome e descrição.
+A IA usa o id em `ImagemDestaque` (imagem + título) ou em **`MidiaCheia`** (só a imagem/vídeo em tela cheia,
+com fade; vídeo roda mudo sobre a narração). Formatos: PNG, JPG, WEBP, GIF, SVG, MP4, WEBM, MOV.
+
 ## Uso pela linha de comando
 
 ```bash

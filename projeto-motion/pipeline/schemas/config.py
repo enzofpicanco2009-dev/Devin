@@ -16,7 +16,7 @@ class Formato(BaseModel):
 class Entrada(BaseModel):
     audio: str
     roteiro: Optional[str] = None
-    idioma: str = "pt"
+    idioma: Optional[str] = "pt"  # None = Whisper detecta automaticamente
 
 
 class RenderConfig(BaseModel):

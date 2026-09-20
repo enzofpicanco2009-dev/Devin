@@ -69,8 +69,8 @@ main { max-width: 860px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
 
 .avancado { margin-top: 1.2rem; color: var(--texto-2); }
 .avancado summary { cursor: pointer; }
-.avancado label { display: flex; gap: 1rem; align-items: center; margin-top: .8rem; color: var(--texto); }
-.avancado select { background: var(--bg); border: 1px solid var(--borda); border-radius: 8px; padding: .4rem .6rem; }
+.avancado label, .idioma { display: flex; gap: 1rem; align-items: center; margin-top: .8rem; color: var(--texto); }
+.avancado select, .idioma select { background: var(--bg); border: 1px solid var(--borda); border-radius: 8px; padding: .4rem .6rem; }
 
 .acao { display: flex; align-items: center; gap: 1rem; }
 .btn-principal { background: var(--acento); color: #111; border: 0; padding: 1rem 2rem; border-radius: 999px; font-weight: 800; font-size: 1.05rem; cursor: pointer; transition: .15s; }
@@ -139,7 +139,32 @@ main { max-width: 860px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
 .img-item { display: grid; grid-template-columns: 64px 1fr 32px; gap: .7rem; align-items: center; }
 .img-item img { width: 64px; height: 48px; object-fit: cover; border-radius: 6px; background: var(--bg-3); }
 .img-item .x { background: none; border: 0; color: var(--texto-2); font-size: 1.3rem; cursor: pointer; }
+.img-item.nova { grid-template-columns: 96px 1fr 32px; align-items: start; }
+.img-item.nova img, .img-item.nova video { width: 96px; height: 72px; object-fit: cover; border-radius: 6px; background: var(--bg-3); }
+.mid-campos .campo { margin-top: 0; }
+.mid-campos textarea.campo { margin-top: .4rem; resize: vertical; }
+.banco { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: .8rem; margin-bottom: 1rem; }
+.mid-card { border: 1px solid var(--borda); border-radius: var(--raio); background: var(--bg); overflow: hidden; display: flex; flex-direction: column; transition: .15s; }
+.mid-card.sel { border-color: var(--acento); box-shadow: 0 0 0 2px var(--acento); }
+.mid-thumb { position: relative; display: block; cursor: pointer; aspect-ratio: 16 / 10; background: var(--bg-3); }
+.mid-thumb img, .mid-thumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mid-thumb input { position: absolute; top: .5rem; left: .5rem; width: 20px; height: 20px; accent-color: var(--acento); z-index: 1; }
+.mid-thumb .badge { position: absolute; right: .5rem; bottom: .5rem; background: rgba(0,0,0,.65); color: #fff; font-size: .72rem; padding: .1rem .5rem; border-radius: 999px; text-transform: uppercase; letter-spacing: .04em; }
+.mid-info { padding: .6rem .8rem .7rem; display: flex; flex-direction: column; gap: .25rem; }
+.mid-info small { color: var(--texto-2); font-size: .82rem; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.mid-acoes { display: flex; gap: .4rem; margin-top: .3rem; }
+.mini { background: var(--bg-3); border: 1px solid var(--borda); color: var(--texto-2); border-radius: 999px; padding: .15rem .6rem; font-size: .75rem; cursor: pointer; }
+.mini:hover { color: var(--texto); border-color: var(--acento); }
 .linha-check { display: flex; gap: .6rem; align-items: center; }
+.ext-midias { background: var(--bg); border: 1px solid var(--borda); border-radius: 12px; padding: .9rem 1rem; margin-bottom: 1rem; }
+.ext-midias .chips { margin: .5rem 0; }
+.ext-midias .chip { cursor: default; padding: .35rem .5rem .35rem .8rem; font-size: .9rem; gap: .4rem; }
+.ext-midias .chip .x { background: none; border: 0; color: var(--texto-2); font-size: 1.1rem; cursor: pointer; line-height: 1; padding: 0 .2rem; }
+.ext-midias .chip .x:hover { color: #ff7b7b; }
+.banco-mini { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); margin-top: .8rem; margin-bottom: 0; }
+.mid-btn { cursor: pointer; text-align: left; font: inherit; color: inherit; padding: 0; }
+.mid-btn:hover { border-color: var(--acento); }
+.mid-btn .mid-info { align-items: flex-start; }
 
 /* ---- produção ao vivo ---- */
 .ao-vivo { margin-top: 1.5rem; background: var(--bg-2); border: 1px solid var(--borda); border-radius: var(--raio); padding: 1.3rem 1.5rem; }
@@ -184,3 +209,4 @@ main { max-width: 860px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
 .ext-area { margin-top: .6rem; min-height: 220px; resize: vertical; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .82rem; line-height: 1.4; color: var(--texto); }
 .externo .acao { margin-top: .6rem; }
 @media (max-width: 800px) { .ext-grid { grid-template-columns: 1fr; } }
+.ext-midias .chip small { display: inline; color: var(--texto-2); font-size: .75rem; }

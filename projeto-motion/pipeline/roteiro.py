@@ -14,6 +14,7 @@ from typing import Any, Literal, Optional
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
 from . import llm
+from .imagens import ids_por_tipo
 from .schemas.timeline import Cena
 
 Sentimento = Literal["positivo", "negativo", "neutro"]
@@ -103,6 +104,10 @@ class DImagem(BaseModel):
     legenda: str = Field(default="", max_length=120)
 
 
+class DMidia(BaseModel):
+    midia: str
+
+
 class DLista(BaseModel):
     titulo: str = Field(default="", max_length=60)
     itens: list[str] = Field(min_length=2, max_length=6)
@@ -118,6 +123,7 @@ DADOS = {
     "GraficoBarras": DGrafico,
     "SetaTendencia": DSeta,
     "ImagemDestaque": DImagem,
+    "MidiaCheia": DMidia,
     "ListaAnimada": DLista,
 }
 
@@ -140,7 +146,7 @@ PROMPT = """Você é o roteirista visual de um canal do YouTube. Recebe a transc
 
 Como pensar:
 1. Leia tudo e identifique as IDEIAS. Uma cena = uma ideia = um ou mais trechos CONSECUTIVOS. Cada trecho pertence a exatamente uma cena; todos os trechos devem ser usados, em ordem.
-2. Para cada cena, escolha a animação que MELHOR MOSTRA aquilo que é dito NAQUELES trechos (número → NumeroDestaque; evolução no tempo com 2+ valores → GraficoBarras; subiu/caiu → SetaTendencia; A contra B → ComparacaoDoisLados; enumeração → ListaAnimada; pergunta retórica → Pergunta; fala de alguém → Citacao; menciona algo que existe nas imagens → ImagemDestaque; afirmação forte/gancho/conclusão → TituloImpacto; explicação corrida sem número nem lista → TextoCorrido com um RESUMO de 1 frase).
+2. Para cada cena, escolha a animação que MELHOR MOSTRA aquilo que é dito NAQUELES trechos (número → NumeroDestaque; evolução no tempo com 2+ valores → GraficoBarras; subiu/caiu → SetaTendencia; A contra B → ComparacaoDoisLados; enumeração → ListaAnimada; pergunta retórica → Pergunta; fala de alguém → Citacao; menciona algo que existe nas mídias disponíveis → ImagemDestaque (imagem + título) ou MidiaCheia (a imagem/vídeo sozinho em tela cheia, sem texto); afirmação forte/gancho/conclusão → TituloImpacto; explicação corrida sem número nem lista → TextoCorrido com um RESUMO de 1 frase).
 3. Escreva o que aparece NA TELA: curto, direto, como um slide. NUNCA copie a frase falada. Títulos com até 6 palavras. Números exatamente como o narrador diz (ex.: "13,75%", "R$ 2 mil", "2%"). Só use números que aparecem nos trechos daquela cena (um gráfico pode juntar números de trechos vizinhos: nesse caso inclua esses trechos na cena).
 4. Varie: nunca use o mesmo template em 3 cenas seguidas.
 5. Cenas ideais duram de 3 a 9 segundos (veja os tempos dos trechos). Junte trechos curtos que falam da mesma coisa.
@@ -155,9 +161,11 @@ Templates e seus dados (use exatamente estes nomes de campos):
 - GraficoBarras: {{"titulo": "...", "barras": [{{"rotulo": "2020", "valor": 2}}, {{"rotulo": "2023", "valor": 13.75}}], "unidade": "%"}}
 - SetaTendencia: {{"direcao": "sobe|desce", "texto": "...", "valor": "+11 p.p.", "sentimento": "positivo|negativo|neutro"}}
 - ListaAnimada: {{"titulo": "...", "itens": ["...", "..."]}}
-- ImagemDestaque: {{"imagem": "<id da imagem>", "texto": "...", "legenda": "..."}}  (só se houver imagem com id compatível)
+- ImagemDestaque: {{"imagem": "<id de uma IMAGEM>", "texto": "...", "legenda": "..."}}  (só se houver imagem com id compatível)
+- MidiaCheia: {{"midia": "<id de uma imagem ou vídeo>"}}  (só a mídia, tela cheia, sem texto; vídeo roda mudo sobre a narração)
 {imagens}
 Canal: {canal}
+Escreva todos os textos das cenas no MESMO IDIOMA da transcrição (as chaves do JSON e os nomes dos templates ficam como estão).
 
 Exemplo (outro assunto) — transcrição "#1 [0.0-3.1] O café é a bebida mais consumida do país. #2 [3.1-5.0] São 21 milhões de sacas por ano. #3 [5.0-6.4] E o consumo só cresce." vira:
 {{"cenas": [
@@ -182,11 +190,16 @@ def _transcricao_texto(cenas: list[Cena]) -> str:
 
 def _imagens_texto(imagens: list[dict]) -> str:
     if not imagens:
-        return "\nImagens disponíveis: nenhuma (não use ImagemDestaque).\n"
-    itens = "\n".join(f'  - id "{i["id"]}": {i.get("descricao") or i.get("nome") or i["id"]}'
-                      f'{" (tags: " + ", ".join(i["tags"]) + ")" if i.get("tags") else ""}'
-                      for i in imagens)
-    return f"\nImagens disponíveis neste projeto (use o id em ImagemDestaque quando a fala mencionar):\n{itens}\n"
+        return "\nMídias disponíveis: nenhuma (não use ImagemDestaque nem MidiaCheia).\n"
+    tipos = ids_por_tipo(imagens)
+    itens = "\n".join(
+        f'  - id "{i["id"]}" ({"VÍDEO" if tipos[i["id"]] == "video" else "imagem"}) — {i.get("nome") or i["id"]}: '
+        f'{i.get("descricao") or "sem descrição"}'
+        f'{" (tags: " + ", ".join(i["tags"]) + ")" if i.get("tags") else ""}'
+        for i in imagens)
+    return ("\nMídias disponíveis neste projeto (use o id quando a fala tratar do que a descrição mostra; "
+            "imagens servem em ImagemDestaque ou MidiaCheia, vídeos só em MidiaCheia):\n"
+            f"{itens}\n")
 
 
 def _segmentos(bruta: dict, n_segmentos: int) -> list[int]:
@@ -196,8 +209,9 @@ def _segmentos(bruta: dict, n_segmentos: int) -> list[int]:
         return []
 
 
-def validar_cena(bruta: dict, ids_imagens: set[str], n_segmentos: int, log=print) -> CenaRoteiro | None:
-    """Cena válida da IA, ou cena marcada TEMPLATE_REGRA se os dados forem inválidos mas os trechos não."""
+def validar_cena(bruta: dict, midias: dict[str, str], n_segmentos: int, log=print) -> CenaRoteiro | None:
+    """Cena válida da IA, ou cena marcada TEMPLATE_REGRA se os dados forem inválidos mas os trechos não.
+    `midias` é id -> tipo ("imagem" | "video") das mídias vinculadas ao projeto."""
     segs = _segmentos(bruta, n_segmentos)
     if not segs:
         return None
@@ -206,8 +220,10 @@ def validar_cena(bruta: dict, ids_imagens: set[str], n_segmentos: int, log=print
         if template not in DADOS:
             raise ValueError(f"template desconhecido '{template}'")
         dados = DADOS[template].model_validate(bruta.get("dados") or {})
-        if template == "ImagemDestaque" and dados.imagem not in ids_imagens:
-            raise ValueError(f"imagem '{dados.imagem}' não existe")
+        if template == "ImagemDestaque" and midias.get(dados.imagem) != "imagem":
+            raise ValueError(f"imagem '{dados.imagem}' não existe neste projeto")
+        if template == "MidiaCheia" and dados.midia not in midias:
+            raise ValueError(f"mídia '{dados.midia}' não existe neste projeto")
     except (ValidationError, ValueError) as e:
         log(f"[m09]   trechos {segs}: resposta da IA inválida ({str(e).splitlines()[0][:80]}) — regras")
         return CenaRoteiro(inicio=0.0, fim=0.0, segmentos=segs, template=TEMPLATE_REGRA, dados={},
@@ -229,12 +245,12 @@ def roteiro_llm(cenas: list[Cena], imagens: list[dict], canal_desc: str, modelo:
     brutas = resposta.get("cenas") if isinstance(resposta, dict) else None
     if not isinstance(brutas, list):
         raise ValueError("resposta do LLM sem lista 'cenas'")
-    ids_img = {i["id"] for i in imagens}
+    tipos = ids_por_tipo(imagens)
     n = len(segmentos_falados(cenas))
     saida: list[CenaRoteiro] = []
     usados: set[int] = set()
     for b in brutas:
-        v = validar_cena(b, ids_img, n, log) if isinstance(b, dict) else None
+        v = validar_cena(b, tipos, n, log) if isinstance(b, dict) else None
         if v:
             v.segmentos = [s for s in v.segmentos if s not in usados]
         if v and v.segmentos:
@@ -377,6 +393,8 @@ def _float(s: str) -> float:
 def _imagem_para(texto: str, imagens: list[dict]) -> Optional[dict]:
     t = texto.lower()
     for img in imagens:
+        if img.get("tipo") == "video":
+            continue
         chaves = [img["id"], img.get("nome", "")] + list(img.get("tags", []))
         for k in chaves:
             k = (k or "").lower().replace("_", " ").strip()

@@ -18,18 +18,17 @@ from fastapi import Body, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from pipeline import llm, roteiro_externo
+from pipeline import biblioteca, llm, roteiro_externo
 from pipeline.canais import FONTES, PALETAS, criar_canal, listar_canais, overrides_design
 from pipeline.comum import PROJETOS, RAIZ, Caminhos, carregar_projeto
 from pipeline.edicao import (EdicaoInvalida, ajustar_tempos, cenas_editaveis, dividir_cena, editar_cena,
                              remover_cena)
+from pipeline.imagens import EXTENSOES as EXT_MIDIA
 from pipeline.imagens import adicionar_imagem, listar_imagens, pasta_imagens, remover_imagem
 from pipeline.m08_resolver_config import listar_presets
 from pipeline.m09_motor_decisao import carregar_catalogo
 from pipeline.m13_renderizar import pasta_previews
 from pipeline.projetos import FORMATOS, criar_projeto, gerar_id, listar_projetos
-
-EXT_IMAGEM = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"}
 
 app = FastAPI(title="Motion Studio")
 ESTATICO = Path(__file__).parent / "static"
@@ -43,6 +42,7 @@ ETAPAS = [
     ("m14", "Juntando com o áudio"),
 ]
 _LINHA_ETAPA = re.compile(r"^\[(m\d\d)\]")
+IDIOMAS = {"auto", "pt", "en", "es", "fr", "it", "de", "ja"}
 
 # projeto_id -> estado do job em andamento/concluído (memória do processo)
 _jobs: dict[str, dict] = {}
@@ -139,16 +139,22 @@ async def criar(
     fonte_id: str = Form(""),
     formatos: str = Form("16x9"),
     modelo: str = Form("small"),
+    idioma: str = Form("pt"),
     usar_ia: bool = Form(True),
     roteiro_modo: str = Form(""),
     imagens: list[UploadFile] = File([]),
     imagens_meta: str = Form("[]"),
+    midias_ids: str = Form(""),
+    midias_novas: list[UploadFile] = File([]),
+    midias_novas_meta: str = Form("[]"),
 ) -> dict:
     lista = [f for f in formatos.split(",") if f]
     if not lista or any(f not in FORMATOS for f in lista):
         raise HTTPException(400, "Escolha ao menos um formato válido")
     if modelo not in {"tiny", "base", "small", "medium", "large-v3"}:
         raise HTTPException(400, "Modelo de transcrição inválido")
+    if idioma not in IDIOMAS:
+        raise HTTPException(400, "Idioma inválido")
     if canal_id not in {c["id"] for c in listar_canais()}:
         raise HTTPException(400, "Canal não existe")
     if roteiro_modo and roteiro_modo not in {"ia", "regras", "externo"}:
@@ -159,10 +165,22 @@ async def criar(
     try:
         overrides = overrides_design(paleta_id or None, fonte_id or None)
         meta = json.loads(imagens_meta or "[]")
+        meta_novas = json.loads(midias_novas_meta or "[]")
     except (ValueError, json.JSONDecodeError) as e:
         raise HTTPException(400, str(e))
-    if not isinstance(meta, list):
-        raise HTTPException(400, "imagens_meta deve ser uma lista")
+    if not isinstance(meta, list) or not isinstance(meta_novas, list):
+        raise HTTPException(400, "imagens_meta e midias_novas_meta devem ser listas")
+    ids_banco = [i.strip() for i in midias_ids.split(",") if i.strip()]
+    conhecidos = {m["id"] for m in biblioteca.listar()}
+    if any(i not in conhecidos for i in ids_banco):
+        raise HTTPException(400, "Mídia do banco não encontrada: "
+                            + ", ".join(i for i in ids_banco if i not in conhecidos))
+    if len(meta_novas) < len(midias_novas):
+        raise HTTPException(400, "Cada mídia nova precisa de nome e descrição")
+    # novas mídias entram primeiro no banco permanente (falha antes de criar o projeto se faltar descrição)
+    for i, up in enumerate(midias_novas):
+        m = meta_novas[i] if isinstance(meta_novas[i], dict) else {}
+        ids_banco.append((await _guardar_no_banco(up, m))["id"])
     sufixo = Path(audio.filename or "audio.wav").suffix.lower() or ".wav"
     titulo = titulo.strip() or Path(audio.filename or "video").stem
     with _lock:
@@ -173,7 +191,8 @@ async def criar(
         try:
             criar_projeto(projeto_id, tmp_path, canal=canal_id, titulo=titulo, modelo=modelo, formatos=lista,
                           tema_id=tema_id or None, estilo_id=estilo_id or None,
-                          overrides_tema=overrides or None, usar_ia=usar_ia, roteiro_externo=externo)
+                          overrides_tema=overrides or None, usar_ia=usar_ia, roteiro_externo=externo,
+                          idioma=idioma if idioma != "auto" else None)
         except ValueError as e:
             raise HTTPException(400, str(e))
         finally:
@@ -182,6 +201,7 @@ async def criar(
         for i, img in enumerate(imagens):
             m = meta[i] if i < len(meta) and isinstance(meta[i], dict) else {}
             await _guardar_imagem(c, img, m)
+        biblioteca.vincular(c, ids_banco)
         _jobs[projeto_id] = {"estado": "rodando", "etapa": None, "formato_atual": None,
                              "formatos": lista, "prontos": [], "log": [], "erro": None}
     # com roteiro externo, só transcreve e divide em trechos; o vídeo sai depois que o roteiro for colado
@@ -189,15 +209,66 @@ async def criar(
     return {"id": projeto_id, "titulo": titulo}
 
 
-async def _guardar_imagem(c: Caminhos, img: UploadFile, meta: dict) -> dict:
-    nome = img.filename or "imagem.png"
-    if Path(nome).suffix.lower() not in EXT_IMAGEM:
-        raise HTTPException(400, f"Imagem não suportada: {nome}")
+def _tags(meta: dict) -> list[str]:
     tags = meta.get("tags", [])
     if isinstance(tags, str):
         tags = [t.strip() for t in tags.split(",") if t.strip()]
-    return adicionar_imagem(c, nome, await img.read(), tags=[str(t) for t in tags],
-                            descricao=str(meta.get("descricao", "")))
+    return [str(t) for t in tags]
+
+
+async def _guardar_no_banco(up: UploadFile, meta: dict) -> dict:
+    nome_arq = up.filename or "midia"
+    if Path(nome_arq).suffix.lower() not in EXT_MIDIA:
+        raise HTTPException(400, f"Arquivo não suportado: {nome_arq}")
+    try:
+        return biblioteca.adicionar(nome_arq, await up.read(), nome=str(meta.get("nome", "")),
+                                    descricao=str(meta.get("descricao", "")), tags=_tags(meta))
+    except ValueError as e:
+        raise HTTPException(400, f"{nome_arq}: {e}")
+
+
+@app.get("/api/biblioteca")
+def biblioteca_listar() -> list[dict]:
+    return biblioteca.listar()
+
+
+@app.post("/api/biblioteca")
+async def biblioteca_adicionar(arquivo: UploadFile = File(...), nome: str = Form(""), descricao: str = Form(""),
+                               tags: str = Form("")) -> dict:
+    return await _guardar_no_banco(arquivo, {"nome": nome, "descricao": descricao, "tags": tags})
+
+
+@app.patch("/api/biblioteca/{mid}")
+def biblioteca_editar(mid: str, nome: Optional[str] = Body(None), descricao: Optional[str] = Body(None),
+                      tags: Optional[list[str]] = Body(None)) -> dict:
+    try:
+        return biblioteca.atualizar(mid, nome=nome, descricao=descricao, tags=tags)
+    except KeyError:
+        raise HTTPException(404, "Mídia não encontrada")
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.delete("/api/biblioteca/{mid}")
+def biblioteca_remover(mid: str) -> dict:
+    if not biblioteca.remover(mid):
+        raise HTTPException(404, "Mídia não encontrada")
+    return {"ok": True}
+
+
+@app.get("/api/biblioteca/{mid}/arquivo")
+def biblioteca_arquivo(mid: str) -> FileResponse:
+    m = biblioteca.obter(mid)
+    if not m:
+        raise HTTPException(404, "Mídia não encontrada")
+    return FileResponse(biblioteca.caminho(m))
+
+
+async def _guardar_imagem(c: Caminhos, img: UploadFile, meta: dict) -> dict:
+    nome = img.filename or "imagem.png"
+    if Path(nome).suffix.lower() not in EXT_MIDIA:
+        raise HTTPException(400, f"Arquivo não suportado: {nome}")
+    return adicionar_imagem(c, nome, await img.read(), tags=_tags(meta), descricao=str(meta.get("descricao", "")))
 
 
 def _caminhos(projeto_id: str) -> Caminhos:
@@ -216,6 +287,14 @@ def imagens_do_projeto(projeto_id: str) -> list[dict]:
 async def enviar_imagem(projeto_id: str, imagem: UploadFile = File(...), tags: str = Form(""),
                         descricao: str = Form("")) -> dict:
     return await _guardar_imagem(_caminhos(projeto_id), imagem, {"tags": tags, "descricao": descricao})
+
+
+@app.post("/api/projetos/{projeto_id}/imagens/banco")
+def vincular_do_banco(projeto_id: str, ids: list[str] = Body(..., embed=True)) -> list[dict]:
+    try:
+        return biblioteca.vincular(_caminhos(projeto_id), ids)
+    except KeyError as e:
+        raise HTTPException(404, f"Mídia do banco não encontrada: {e.args[0]}")
 
 
 @app.delete("/api/projetos/{projeto_id}/imagens/{iid}")

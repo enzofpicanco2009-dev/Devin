@@ -2,7 +2,7 @@ const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 
 const estado = { audio: null, canal: null, tema: null, estilo: null, paleta: null, fonte: null,
-  imagens: [], formatos: new Set(["16x9"]), opcoes: null, poll: null, roteiroModo: "externo" };
+  banco: [], midiasSel: new Set(), midiasNovas: [], formatos: new Set(["16x9"]), opcoes: null, poll: null, roteiroModo: "externo" };
 
 // ---------- navegação ----------
 function mostrar(tela) {
@@ -20,6 +20,7 @@ document.addEventListener("click", (e) => {
 // ---------- opções (temas, estilos, formatos) ----------
 async function carregarOpcoes() {
   estado.opcoes = await (await fetch("/api/opcoes")).json();
+  carregarBanco();
   const { temas, estilos, formatos, paletas, fontes, ia } = estado.opcoes;
 
   renderCanais();
@@ -131,27 +132,75 @@ function amostra() {
   $("em", el).style.color = c.destaque; $(".am-num", el).style.color = c.destaque_2;
 }
 
-// ---------- imagens do projeto ----------
-const inputImg = $("#imagens"), dropImg = $(".drop-img");
-["dragenter", "dragover"].forEach((ev) => dropImg.addEventListener(ev, (e) => { e.preventDefault(); dropImg.classList.add("sobre"); }));
-["dragleave", "drop"].forEach((ev) => dropImg.addEventListener(ev, (e) => { e.preventDefault(); dropImg.classList.remove("sobre"); }));
-dropImg.addEventListener("drop", (e) => addImagens(e.dataTransfer.files));
-inputImg.addEventListener("change", () => { addImagens(inputImg.files); inputImg.value = ""; });
-function addImagens(files) {
-  for (const f of files) if (f.type.startsWith("image/") || /\.svg$/i.test(f.name))
-    estado.imagens.push({ file: f, url: URL.createObjectURL(f), tags: f.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " "), descricao: "" });
-  renderImagens();
+// ---------- banco de imagens e vídeos ----------
+const inputMid = $("#midias"), dropMid = $(".drop-img");
+["dragenter", "dragover"].forEach((ev) => dropMid.addEventListener(ev, (e) => { e.preventDefault(); dropMid.classList.add("sobre"); }));
+["dragleave", "drop"].forEach((ev) => dropMid.addEventListener(ev, (e) => { e.preventDefault(); dropMid.classList.remove("sobre"); }));
+dropMid.addEventListener("drop", (e) => addMidias(e.dataTransfer.files));
+inputMid.addEventListener("change", () => { addMidias(inputMid.files); inputMid.value = ""; });
+const EXT_MIDIA = /\.(png|jpe?g|webp|gif|svg|mp4|webm|mov)$/i;
+function addMidias(files) {
+  for (const f of files) if (EXT_MIDIA.test(f.name))
+    estado.midiasNovas.push({ file: f, url: URL.createObjectURL(f), video: /\.(mp4|webm|mov)$/i.test(f.name),
+      nome: f.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " "), descricao: "" });
+  renderMidiasNovas();
 }
-function renderImagens() {
-  $("#lista-imagens").innerHTML = estado.imagens.map((im, i) => `
-    <div class="img-item">
-      <img src="${im.url}" alt="" />
-      <input type="text" class="campo" data-i="${i}" value="${escapar(im.tags)}" placeholder="palavras-chave, separadas por vírgula" />
+function renderMidiasNovas() {
+  $("#lista-midias").innerHTML = estado.midiasNovas.map((m, i) => `
+    <div class="img-item nova">
+      ${m.video ? `<video src="${m.url}" muted></video>` : `<img src="${m.url}" alt="" />`}
+      <div class="mid-campos">
+        <input type="text" class="campo" data-i="${i}" data-k="nome" value="${escapar(m.nome)}" placeholder="Nome" required />
+        <textarea class="campo" rows="2" data-i="${i}" data-k="descricao" placeholder="Descrição para a IA: o que aparece, quando usar (obrigatório)">${escapar(m.descricao)}</textarea>
+      </div>
       <button type="button" class="x" data-rm="${i}" title="Remover">×</button>
     </div>`).join("");
 }
-$("#lista-imagens").addEventListener("input", (e) => { const i = e.target.dataset.i; if (i !== undefined) estado.imagens[+i].tags = e.target.value; });
-$("#lista-imagens").addEventListener("click", (e) => { const b = e.target.closest("[data-rm]"); if (b) { estado.imagens.splice(+b.dataset.rm, 1); renderImagens(); } });
+$("#lista-midias").addEventListener("input", (e) => { const { i, k } = e.target.dataset; if (i !== undefined && k) estado.midiasNovas[+i][k] = e.target.value; });
+$("#lista-midias").addEventListener("click", (e) => { const b = e.target.closest("[data-rm]"); if (b) { estado.midiasNovas.splice(+b.dataset.rm, 1); renderMidiasNovas(); } });
+
+async function carregarBanco() {
+  estado.banco = await (await fetch("/api/biblioteca")).json();
+  renderBanco();
+}
+function renderBanco() {
+  const el = $("#banco");
+  if (!estado.banco.length) { el.innerHTML = `<p class="dica">O banco está vazio. Adicione a primeira imagem ou vídeo abaixo.</p>`; return; }
+  el.innerHTML = estado.banco.map((m) => `
+    <div class="mid-card ${estado.midiasSel.has(m.id) ? "sel" : ""}" data-id="${m.id}">
+      <label class="mid-thumb">
+        <input type="checkbox" ${estado.midiasSel.has(m.id) ? "checked" : ""} data-sel="${m.id}" />
+        ${m.tipo === "video" ? `<video src="/api/biblioteca/${m.id}/arquivo" muted preload="metadata"></video>` : `<img src="/api/biblioteca/${m.id}/arquivo" alt="" />`}
+        <span class="badge">${m.tipo === "video" ? "vídeo" : "imagem"}</span>
+      </label>
+      <div class="mid-info">
+        <strong>${escapar(m.nome)}</strong>
+        <small>${escapar(m.descricao)}</small>
+        <div class="mid-acoes"><button type="button" class="mini" data-ed="${m.id}">Editar</button><button type="button" class="mini" data-del="${m.id}">Apagar</button></div>
+      </div>
+    </div>`).join("");
+}
+$("#banco").addEventListener("change", (e) => {
+  const id = e.target.dataset.sel; if (!id) return;
+  e.target.checked ? estado.midiasSel.add(id) : estado.midiasSel.delete(id);
+  e.target.closest(".mid-card").classList.toggle("sel", e.target.checked);
+});
+$("#banco").addEventListener("click", async (e) => {
+  const del = e.target.closest("[data-del]"), ed = e.target.closest("[data-ed]");
+  if (del) {
+    const m = estado.banco.find((x) => x.id === del.dataset.del);
+    if (!confirm(`Apagar "${m.nome}" do banco? Vídeos já gerados não são afetados.`)) return;
+    await fetch(`/api/biblioteca/${m.id}`, { method: "DELETE" });
+    estado.midiasSel.delete(m.id); await carregarBanco();
+  } else if (ed) {
+    const m = estado.banco.find((x) => x.id === ed.dataset.ed);
+    const nome = prompt("Nome da mídia:", m.nome); if (nome === null) return;
+    const descricao = prompt("Descrição para a IA (o que aparece, quando usar):", m.descricao); if (descricao === null) return;
+    const r = await fetch(`/api/biblioteca/${m.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nome, descricao }) });
+    if (!r.ok) alert((await r.json()).detail || "Não foi possível salvar.");
+    await carregarBanco();
+  }
+});
 
 // ---------- áudio ----------
 const drop = $("#drop"), inputAudio = $("#audio");
@@ -192,9 +241,11 @@ $("#form").addEventListener("submit", async (e) => {
   fd.append("fonte_id", estado.fonte || "");
   fd.append("formatos", [...estado.formatos].join(","));
   fd.append("modelo", $("#modelo").value);
+  fd.append("idioma", $("#idioma").value);
   fd.append("roteiro_modo", estado.roteiroModo);
-  for (const im of estado.imagens) fd.append("imagens", im.file, im.file.name);
-  fd.append("imagens_meta", JSON.stringify(estado.imagens.map((im) => ({ tags: im.tags, descricao: im.descricao }))));
+  fd.append("midias_ids", [...estado.midiasSel].join(","));
+  for (const m of estado.midiasNovas) fd.append("midias_novas", m.file, m.file.name);
+  fd.append("midias_novas_meta", JSON.stringify(estado.midiasNovas.map((m) => ({ nome: m.nome, descricao: m.descricao }))));
   try {
     const r = await fetch("/api/projetos", { method: "POST", body: fd });
     if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
@@ -239,10 +290,51 @@ function renderExterno(p) {
   const ext = p.roteiro_externo;
   const el = $("#externo");
   if (!ext || !ext.pronto || p.estado === "rodando") { el.hidden = true; return; }
+  const primeira = el.hidden;
   el.hidden = false;
-  if ($("#ext-transcricao").value !== ext.transcricao) { $("#ext-transcricao").value = ext.transcricao; $("#ext-prompt").value = ext.prompt; }
+  if ($("#ext-transcricao").value !== ext.transcricao) $("#ext-transcricao").value = ext.transcricao;
+  if ($("#ext-prompt").value !== ext.prompt) $("#ext-prompt").value = ext.prompt;
   $("#ext-status").textContent = ext.pendente ? `${ext.trechos} trechos transcritos — aguardando o roteiro` : "roteiro aplicado — cole outro para refazer";
+  if (primeira) renderMidiasExterno();
 }
+
+async function midiasDoProjeto() {
+  estado.imagensProjeto = await (await fetch(`/api/projetos/${estado.projetoAtual}/imagens`)).json();
+  return estado.imagensProjeto;
+}
+async function renderMidiasExterno() {
+  const midias = await midiasDoProjeto();
+  $("#ext-midias-lista").innerHTML = midias.length
+    ? midias.map((m) => `<span class="chip" title="${escapar(m.descricao || "")}">${escapar(m.nome)} <small>${m.tipo === "video" ? "vídeo" : "imagem"}</small><button type="button" class="x" data-desvincular="${m.id}" title="Tirar deste vídeo">×</button></span>`).join("")
+    : `<small class="sb-pq">Nenhuma mídia neste vídeo — a IA não poderá usar imagens ou vídeos.</small>`;
+}
+$("#ext-midias-lista").addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-desvincular]"); if (!b) return;
+  await fetch(`/api/projetos/${estado.projetoAtual}/imagens/${b.dataset.desvincular}`, { method: "DELETE" });
+  await renderMidiasExterno(); atualizar(estado.projetoAtual);
+});
+$("#ext-anexar").addEventListener("click", async () => {
+  const box = $("#ext-banco");
+  if (!box.hidden) { box.hidden = true; return; }
+  await carregarBanco();
+  const ja = new Set((estado.imagensProjeto || []).map((m) => m.id));
+  const livres = estado.banco.filter((m) => !ja.has(m.id));
+  box.innerHTML = livres.length
+    ? livres.map((m) => `
+      <button type="button" class="mid-card mid-btn" data-vincular="${m.id}">
+        <span class="mid-thumb">${m.tipo === "video" ? `<video src="/api/biblioteca/${m.id}/arquivo" muted preload="metadata"></video>` : `<img src="/api/biblioteca/${m.id}/arquivo" alt="" />`}<span class="badge">${m.tipo === "video" ? "vídeo" : "imagem"}</span></span>
+        <span class="mid-info"><strong>${escapar(m.nome)}</strong><small>${escapar(m.descricao)}</small><small class="sb-pq">clique para anexar</small></span>
+      </button>`).join("")
+    : `<p class="dica">Todas as mídias do banco já estão neste vídeo. Para adicionar uma nova ao banco, use a tela “Novo vídeo”.</p>`;
+  box.hidden = false;
+});
+$("#ext-banco").addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-vincular]"); if (!b) return;
+  const r = await fetch(`/api/projetos/${estado.projetoAtual}/imagens/banco`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids: [b.dataset.vincular] }) });
+  if (!r.ok) { alert((await r.json().catch(() => ({}))).detail || "Não foi possível anexar."); return; }
+  b.remove();
+  await renderMidiasExterno(); atualizar(estado.projetoAtual);
+});
 
 // ---------- progresso / resultado ----------
 function abrirProjeto(id) {
@@ -344,6 +436,7 @@ const CAMPOS = {
   GraficoBarras: [["titulo", "Título", "texto"], ["barras", "Barras — uma por linha: nome: valor", "barras"], ["unidade", "Unidade (%, R$…)", "texto"]],
   SetaTendencia: [["direcao", "Direção", "opcoes", [["sobe", "Sobe"], ["desce", "Desce"]]], ["texto", "Texto", "texto"], ["valor", "Valor", "texto"],
     ["sentimento", "Cor", "opcoes", [["neutro", "Neutro"], ["positivo", "Positivo (verde)"], ["negativo", "Negativo (vermelho)"]]]],
+  MidiaCheia: [["midia", "Imagem ou vídeo do projeto", "midia"]],
   ImagemDestaque: [["imagem", "Imagem do projeto", "imagem"], ["texto", "Título sobre a imagem", "texto"], ["legenda", "Legenda", "texto"]],
   ListaAnimada: [["titulo", "Título", "texto"], ["itens", "Itens — um por linha (2 a 6)", "linhas"]],
 };
@@ -365,10 +458,10 @@ function editorCena(c) {
     else if (tipo === "linhas") input = `<textarea class="campo" rows="4" ${nome}>${escapar((v || []).join("\n"))}</textarea>`;
     else if (tipo === "barras") input = `<textarea class="campo" rows="4" ${nome}>${escapar((v || []).map((b) => `${b.rotulo}: ${b.valor}`).join("\n"))}</textarea>`;
     else if (tipo === "opcoes") input = `<select class="campo" ${nome}>${opcoes.map(([o, r]) => `<option value="${o}" ${v === o ? "selected" : ""}>${r}</option>`).join("")}</select>`;
-    else if (tipo === "imagem") {
-      const imgs = estado.imagensProjeto || [];
+    else if (tipo === "imagem" || tipo === "midia") {
+      const imgs = (estado.imagensProjeto || []).filter((im) => tipo === "midia" || im.tipo !== "video");
       input = imgs.length ? `<select class="campo" ${nome}>${imgs.map((im) => `<option value="${im.id}" ${v === im.id ? "selected" : ""}>${escapar(im.nome || im.arquivo)}</option>`).join("")}</select>`
-        : `<small class="sb-pq">Este projeto não tem imagens enviadas.</small>`;
+        : `<small class="sb-pq">Este projeto não tem ${tipo === "midia" ? "mídias" : "imagens"} do banco vinculadas.</small>`;
     } else input = `<input class="campo" ${nome} value="${escapar(String(v ?? ""))}" />`;
     return `<label class="ed-campo"><span>${rotulo}</span>${input}</label>`;
   }).join("");
@@ -391,7 +484,7 @@ function editorCena(c) {
 }
 function redesenharStoryboard() { renderAoVivo({ id: estado.projetoAtual, ao_vivo: estado.aoVivo, estado: "concluido", etapa: null }); }
 window.editarCena = async (id) => {
-  if (!estado.imagensProjeto) estado.imagensProjeto = await (await fetch(`/api/projetos/${estado.projetoAtual}/imagens`)).json();
+  if (!estado.imagensProjeto) await midiasDoProjeto();
   estado.editando = id; estado.editTemplate = null; redesenharStoryboard();
 };
 window.trocarTemplateEdicao = (tpl) => { estado.editTemplate = tpl; redesenharStoryboard(); };
@@ -445,7 +538,7 @@ window.rerenderizar = () => { estado.imagensProjeto = null; regerar(estado.proje
 function templateNome(id) {
   return ({ TextoCorrido: "Texto resumido", TituloImpacto: "Título de impacto", Pergunta: "Pergunta", Citacao: "Citação", NumeroDestaque: "Número em destaque",
     ComparacaoDoisLados: "Comparação", GraficoBarras: "Gráfico de barras", SetaTendencia: "Seta de tendência",
-    ImagemDestaque: "Imagem em destaque", ListaAnimada: "Lista animada", FundoVazio: "Fundo" })[id] || id;
+    ImagemDestaque: "Imagem em destaque", MidiaCheia: "Mídia em tela cheia", ListaAnimada: "Lista animada", FundoVazio: "Fundo" })[id] || id;
 }
 function fmtTempo(s) { const m = Math.floor(s / 60); return `${m}:${String(Math.floor(s % 60)).padStart(2, "0")}`; }
 

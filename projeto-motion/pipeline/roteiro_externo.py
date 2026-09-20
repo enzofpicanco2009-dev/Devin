@@ -15,7 +15,7 @@ import re
 from . import roteiro
 from .canais import listar_canais
 from .comum import Caminhos, carregar_projeto, carregar_timeline, salvar_timeline
-from .imagens import listar_imagens
+from .imagens import ids_por_tipo, listar_imagens
 from .schemas.timeline import Cena, Timeline
 
 ARQUIVO = "roteiro_externo.json"
@@ -99,13 +99,13 @@ def validar(texto: str, cenas: list[Cena], imagens: list[dict]) -> list[roteiro.
     brutas = bruto.get("cenas") if isinstance(bruto, dict) else None
     if not isinstance(brutas, list) or not brutas:
         raise RoteiroExternoInvalido('o JSON precisa ter a lista "cenas"')
-    ids_img = {i["id"] for i in imagens}
+    tipos = ids_por_tipo(imagens)
     n = len(roteiro.segmentos_falados(cenas))
     problemas: list[str] = []
     saida: list[roteiro.CenaRoteiro] = []
     usados: set[int] = set()
     for i, b in enumerate(brutas, start=1):
-        v = roteiro.validar_cena(b, ids_img, n, log=lambda m: problemas.append(f"cena {i}: {m}")) \
+        v = roteiro.validar_cena(b, tipos, n, log=lambda m: problemas.append(f"cena {i}: {m}")) \
             if isinstance(b, dict) else None
         if v is None:
             problemas.append(f"cena {i}: sem trechos válidos (\"segmentos\" deve listar números de 1 a {n})")

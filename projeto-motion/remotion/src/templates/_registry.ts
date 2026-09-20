@@ -12,6 +12,7 @@ import * as ComparacaoDoisLados from "./ComparacaoDoisLados";
 import * as GraficoBarras from "./GraficoBarras";
 import * as SetaTendencia from "./SetaTendencia";
 import * as ImagemDestaque from "./ImagemDestaque";
+import * as MidiaCheia from "./MidiaCheia";
 import * as Pergunta from "./Pergunta";
 import * as TextoCorrido from "./TextoCorrido";
 
@@ -67,6 +68,11 @@ export const registry = {
     Component: ImagemDestaque.ImagemDestaque,
     schema: ImagemDestaque.schema,
     defaultProps: ImagemDestaque.defaultProps,
+  },
+  MidiaCheia: {
+    Component: MidiaCheia.MidiaCheia,
+    schema: MidiaCheia.schema,
+    defaultProps: MidiaCheia.defaultProps,
   },
   Pergunta: {
     Component: Pergunta.Pergunta,

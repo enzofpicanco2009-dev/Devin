@@ -6,7 +6,7 @@ import re
 from .comum import Caminhos, carregar_projeto, carregar_timeline, salvar_timeline, sha256_obj
 from .m08_resolver_config import resolver
 from .schemas.config import ConfigResolvida
-from .imagens import publicar_imagens
+from .imagens import ids_por_tipo, listar_imagens, publicar_imagens
 from .schemas.timeline import Cena
 
 ETAPA = "m12"
@@ -229,6 +229,28 @@ def fazer_props_imagem(mapa_imagens: dict[str, str]):
     return props_imagem
 
 
+def fazer_props_midia(mapa: dict[str, str], tipos: dict[str, str]):
+    contador = {"imagens": 0}
+
+    def props_midia(cena: Cena, cfg: ConfigResolvida, avisos: list[str]) -> dict:
+        s = _sem(cena)
+        mid = str(s.get("midia", ""))
+        src = mapa.get(mid)
+        if not src:
+            avisos.append(f"{cena.id}: mídia '{mid}' não encontrada — usando título")
+            cena.decisao.template = "TituloImpacto"
+            cena.decisao.props_semanticas = {"texto": s.get("texto") or cena.texto}
+            return props_titulo_impacto(cena, cfg, avisos)
+        tipo = tipos.get(mid, "imagem")
+        props = {**props_base(cena, cfg), "src": src, "tipo": tipo}
+        if tipo == "imagem":
+            # alterna zoom in / zoom out entre as imagens do vídeo para não ficar estático
+            props["zoom"] = "in" if contador["imagens"] % 2 == 0 else "out"
+            contador["imagens"] += 1
+        return props
+    return props_midia
+
+
 APLICADORES = {
     "TextoCorrido": props_texto,
     "TituloImpacto": props_titulo_impacto,
@@ -254,7 +276,9 @@ def executar(projeto_id: str, force: bool = False, formato_id: str | None = None
         cfg = cfg.model_copy(update={"formato": projeto.formato(formato_id)})
     t.config_resolvida = cfg
 
-    aplicadores = {**APLICADORES, "ImagemDestaque": fazer_props_imagem(publicar_imagens(c))}
+    mapa_midias = publicar_imagens(c)
+    aplicadores = {**APLICADORES, "ImagemDestaque": fazer_props_imagem(mapa_midias),
+                   "MidiaCheia": fazer_props_midia(mapa_midias, ids_por_tipo(listar_imagens(c)))}
     avisos = [a for a in t.validacao.avisos if not a.startswith(tuple(x.id + ":" for x in t.cenas))]
     for cena in t.cenas:
         if not cena.decisao:
