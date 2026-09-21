@@ -1,9 +1,25 @@
-"""M14 — Mixa o áudio original no vídeo renderizado e valida sincronia (FFmpeg)."""
+"""M14 — Garante áudio no final mixando sempre o áudio original com o vídeo do M13."""
 from __future__ import annotations
 
+import json
+import subprocess
 from .comum import Caminhos, carregar_projeto, carregar_timeline, duracao_s, rodar, salvar_timeline, sha256_obj
 
 ETAPA = "m14"
+
+
+def _tem_audio(arquivo) -> bool:
+    """Verifica se arquivo de vídeo tem stream de áudio."""
+    try:
+        result = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "a:0", "-show_entries", 
+             "stream=codec_type", "-of", "json", str(arquivo)],
+            capture_output=True, text=True, timeout=10
+        )
+        data = json.loads(result.stdout)
+        return len(data.get("streams", [])) > 0
+    except Exception:
+        return False
 
 
 def executar(projeto_id: str, force: bool = False, formato_id: str | None = None,
@@ -20,6 +36,8 @@ def executar(projeto_id: str, force: bool = False, formato_id: str | None = None
     hash_video = t.artefatos.get(f"m13:{formato.id}")
     if not hash_video or not video.exists():
         raise RuntimeError(f"m13 não concluída para o formato {formato.id}")
+    
+    # Sempre usa o áudio original da entrada para garantir presença e volume no final.
     chave = sha256_obj({"video": hash_video, "audio": t.audio.hash, "loudness": normalizar_loudness})
     chave_id = f"{ETAPA}:{formato.id}"
     if t.artefatos.get(chave_id) == chave and final.exists() and not force:

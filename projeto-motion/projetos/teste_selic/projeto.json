@@ -25,7 +25,9 @@
   ],
   "formato_principal": "16x9",
   "transcricao": {
-    "modelo": "small"
+    "modelo": "tiny",
+    "device": "cpu",
+    "compute_type": "int8"
   },
   "decisao": {
     "provedor": "ollama",

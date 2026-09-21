@@ -9,6 +9,12 @@ from .comum import CONFIG, sha256_obj
 from .schemas.config import Canal, ConfigResolvida, Estilo, Projeto, Tema
 
 
+CORES_TEMA_KEYS = {
+    "fundo", "fundo_secundario", "texto", "texto_secundario",
+    "destaque", "destaque_2", "positivo", "negativo", "neutro",
+}
+
+
 def deep_merge(base: dict, extra: dict | None) -> dict:
     out = deepcopy(base)
     for k, v in (extra or {}).items():
@@ -49,7 +55,15 @@ def resolver(projeto: Projeto) -> ConfigResolvida:
     tema_dict = deep_merge(_ler(CONFIG / "defaults" / "tema.json"),
                            _preset("temas", projeto.tema_id or canal.tema_padrao))
     tema_dict = deep_merge(tema_dict, _ler(canal_dir / "tema.json"))
-    tema_dict = deep_merge(tema_dict, projeto.overrides.get("tema"))
+    overrides_tema = projeto.overrides.get("tema") or {}
+    nested_legacy = overrides_tema.get("tema") if isinstance(overrides_tema.get("tema"), dict) else {}
+    # Compatibilidade retroativa: projetos antigos podem ter salvo cores no nível raiz de tema.
+    cores_legacy = {k: overrides_tema[k] for k in CORES_TEMA_KEYS if k in overrides_tema}
+    cores_nested_legacy = {k: nested_legacy[k] for k in CORES_TEMA_KEYS if k in nested_legacy}
+    cores_todas = {**cores_legacy, **cores_nested_legacy}
+    if cores_todas:
+        overrides_tema = {**overrides_tema, "cores": {**(overrides_tema.get("cores") or {}), **cores_todas}}
+    tema_dict = deep_merge(tema_dict, overrides_tema)
 
     estilo = Estilo.model_validate(estilo_dict)
     tema = Tema.model_validate(tema_dict)

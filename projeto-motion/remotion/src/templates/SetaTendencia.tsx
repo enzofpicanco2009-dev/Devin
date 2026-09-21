@@ -53,13 +53,13 @@ export const SetaTendencia: React.FC<Props> = (p) => {
   const d = pts.map(([x, y], i) => `${i ? "L" : "M"}${x},${y}`).join(" ");
   const comp = W * 1.6;
   const [px, py] = pts[pts.length - 1];
-  const ang = Math.atan2(py - pts[3][1], px - pts[3][0]);
-  const pontaOp = desenho > 0.97 ? 1 : 0;
-  const s = 46 * esc;
+  const ang = Math.atan2(py - pts[pts.length - 2][1], px - pts[pts.length - 2][0]);
+  const pontaOp = desenho > 0.90 ? 1 : 0;
+  const s = 75 * esc;
   const ponta = [
     [px, py],
-    [px - s * Math.cos(ang - 0.5), py - s * Math.sin(ang - 0.5)],
-    [px - s * Math.cos(ang + 0.5), py - s * Math.sin(ang + 0.5)],
+    [px - s * Math.cos(ang - 0.45), py - s * Math.sin(ang - 0.45)],
+    [px - s * Math.cos(ang + 0.45), py - s * Math.sin(ang + 0.45)],
   ]
     .map((q) => q.join(","))
     .join(" ");
@@ -78,7 +78,7 @@ export const SetaTendencia: React.FC<Props> = (p) => {
             d={d}
             fill="none"
             stroke={cor}
-            strokeWidth={18 * esc}
+            strokeWidth={28 * esc}
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeDasharray={comp}

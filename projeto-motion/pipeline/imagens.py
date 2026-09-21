@@ -21,6 +21,16 @@ EXTENSOES = EXT_IMAGEM | EXT_VIDEO
 PUBLIC = REMOTION / "public"
 
 
+def _limpar_symlinks_publico_projetos() -> None:
+    """Remove symlinks antigos que quebram o bundle do Remotion no Windows (EPERM)."""
+    raiz = PUBLIC / "projetos"
+    if not raiz.exists():
+        return
+    for p in raiz.rglob("*"):
+        if p.is_symlink():
+            p.unlink(missing_ok=True)
+
+
 def tipo_de(arquivo: str) -> str:
     return "video" if Path(arquivo).suffix.lower() in EXT_VIDEO else "imagem"
 
@@ -115,12 +125,15 @@ def remover_imagem(c: Caminhos, iid: str) -> bool:
 
 def publicar_imagens(c: Caminhos) -> dict[str, str]:
     """Copia as imagens para `remotion/public/projetos/<id>/`; devolve id -> caminho relativo a public/."""
+    _limpar_symlinks_publico_projetos()
     destino = PUBLIC / "projetos" / c.raiz.name
     destino.mkdir(parents=True, exist_ok=True)
     mapa: dict[str, str] = {}
     for i in listar_imagens(c):
         src = pasta_imagens(c) / i["arquivo"]
         dst = destino / i["arquivo"]
+        if dst.is_symlink():
+            dst.unlink(missing_ok=True)
         if not dst.exists() or dst.stat().st_mtime < src.stat().st_mtime:
             shutil.copy2(src, dst)
         mapa[i["id"]] = f"projetos/{c.raiz.name}/{i['arquivo']}"

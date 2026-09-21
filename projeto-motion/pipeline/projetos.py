@@ -43,6 +43,8 @@ def criar_projeto(
     usar_ia: bool = True,
     roteiro_externo: bool = False,
     idioma: str | None = "pt",
+    ritmo_edicao: str = "medio",
+    legendas_sincronizadas: bool = True,
 ) -> Path:
     if not ID_PROJETO_RE.match(projeto_id):
         raise ValueError(f"ID de projeto inválido: {projeto_id!r}")
@@ -63,6 +65,10 @@ def criar_projeto(
     if audio:
         shutil.copy(audio, raiz / "entrada" / audio_nome)
 
+    overrides = {"video": {"legendas_ativas": bool(legendas_sincronizadas)}}
+    if overrides_tema:
+        overrides["tema"] = overrides_tema
+
     projeto = {
         "schema_version": 1,
         "id": projeto_id,
@@ -74,9 +80,9 @@ def criar_projeto(
         "tema_id": tema_id,
         "estilo_id": estilo_id,
         "transcricao": {"modelo": modelo},
-        "overrides": {"tema": overrides_tema} if overrides_tema else {},
+        "overrides": overrides,
         "decisao": {"provedor": "externo" if roteiro_externo else ("ollama" if usar_ia else "nenhum"),
-                    "template_fixo": None},
+                    "template_fixo": None, "ritmo_edicao": ritmo_edicao},
     }
     (raiz / "projeto.json").write_text(json.dumps(projeto, ensure_ascii=False, indent=2), encoding="utf-8")
     return raiz
@@ -94,3 +100,23 @@ def listar_projetos() -> list[dict]:
                       "tema_id": d.get("tema_id"), "estilo_id": d.get("estilo_id"),
                       "formatos": finais, "criado_em": p.stat().st_mtime})
     return saida
+
+
+def excluir_projeto(projeto_id: str) -> None:
+    """Exclui um projeto e todos os seus arquivos.
+    
+    Args:
+        projeto_id: ID do projeto a ser excluído.
+        
+    Raises:
+        ValueError: Se o ID do projeto for inválido.
+        FileNotFoundError: Se o projeto não existir.
+    """
+    if not ID_PROJETO_RE.match(projeto_id):
+        raise ValueError(f"ID de projeto inválido: {projeto_id!r}")
+    
+    raiz = PROJETOS / projeto_id
+    if not raiz.exists():
+        raise FileNotFoundError(f"Projeto não encontrado: {raiz}")
+    
+    shutil.rmtree(raiz)

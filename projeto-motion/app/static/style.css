@@ -25,6 +25,7 @@ h2 { font-size: 1.1rem; margin: 0; }
 nav { display: flex; gap: .25rem; }
 .link { background: none; border: 0; padding: .5rem .9rem; border-radius: 999px; color: var(--texto-2); cursor: pointer; }
 .link.ativo, .link:hover { color: var(--texto); background: var(--bg-3); }
+.ui-lang select { background: var(--bg); border: 1px solid var(--borda); border-radius: 8px; padding: .35rem .55rem; color: var(--texto); }
 
 main { max-width: 860px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
 
@@ -47,6 +48,7 @@ main { max-width: 860px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
 
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: .9rem; }
 .card { border: 2px solid var(--borda); border-radius: 12px; overflow: hidden; cursor: pointer; background: var(--bg); transition: .15s; text-align: left; padding: 0; }
+.card { position: relative; }
 .card:hover { border-color: #3a4150; transform: translateY(-2px); }
 .card.sel { border-color: var(--acento); box-shadow: 0 0 0 3px rgba(245,192,66,.18); }
 .card .previa { height: 96px; display: grid; place-items: center; padding: .8rem; }
@@ -55,6 +57,8 @@ main { max-width: 860px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
 .card .info { padding: .7rem .9rem .9rem; }
 .card .info strong { display: block; }
 .card .info small { color: var(--texto-2); }
+.tema-del { position: absolute; top: 8px; right: 8px; width: 26px; height: 26px; border-radius: 999px; border: 1px solid rgba(255,255,255,.15); background: rgba(0,0,0,.45); color: #fff; font-size: 16px; line-height: 1; cursor: pointer; }
+.tema-del:hover { border-color: var(--erro); color: var(--erro); }
 .estilos .previa { flex-direction: row; gap: 6px; display: flex; align-items: center; justify-content: center; background: var(--bg-3); }
 .estilos .barra { height: 10px; border-radius: 5px; background: var(--acento); opacity: .9; }
 
@@ -108,12 +112,15 @@ main { max-width: 860px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
 .item .estado.concluido { color: var(--ok); }
 .item .estado.rodando { color: var(--acento); }
 .item .estado.erro { color: var(--erro); }
+.item .btn-excluir { background: none; border: none; color: var(--texto-2); font-size: 1.6rem; cursor: pointer; padding: .2rem .4rem; line-height: 1; transition: .15s; flex: none; }
+.item .btn-excluir:hover { color: var(--erro); }
 .vazio { color: var(--texto-2); text-align: center; padding: 3rem 0; }
 
 /* ---- canal / design ---- */
 .dica { color: var(--texto-2); margin: -.4rem 0 1rem; font-size: .92rem; }
 .sub-h { font-size: .95rem; margin: 1.2rem 0 .6rem; }
 .sub-h small { color: var(--texto-2); font-weight: 400; }
+.acao-tema { display: flex; align-items: center; gap: .8rem; margin-top: .8rem; }
 .card .canal-previa span { font-size: 2.2rem; font-weight: 900; }
 .grade-canal { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; margin-top: .8rem; }
 .grade-canal .btn, .grade-canal .erro { grid-column: 1 / -1; }
@@ -130,6 +137,13 @@ main { max-width: 860px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
 .am-titulo { font-size: 1.6rem; line-height: 1.1; }
 .am-titulo em { font-style: normal; }
 .am-num { font-size: 2.4rem; }
+
+.editor-cores { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1.2rem; margin-top: 1rem; }
+.cor-item { display: flex; flex-direction: column; gap: .5rem; }
+.cor-item label { font-size: .9rem; color: var(--texto-2); font-weight: 600; }
+.cor-item input[type="color"] { width: 100%; height: 60px; border: none; border-radius: 10px; cursor: pointer; }
+.cor-item .cor-hex { font-size: .8rem; background: var(--bg); padding: .4rem .6rem; border-radius: 6px; border: 1px solid var(--borda); text-align: center; font-family: monospace; }
+
 
 /* ---- imagens ---- */
 .drop-img { padding: 1.2rem; }

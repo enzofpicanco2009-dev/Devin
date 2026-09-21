@@ -13,6 +13,13 @@
     <button class="link ativo" data-tela="novo">Novo vídeo</button>
     <button class="link" data-tela="biblioteca">Meus vídeos</button>
   </nav>
+  <label class="ui-lang" aria-label="Idioma da interface">
+    <select id="ui-lang">
+      <option value="pt">Português</option>
+      <option value="en">English</option>
+      <option value="es">Español</option>
+    </select>
+  </label>
 </header>
 
 <main>
@@ -41,14 +48,14 @@
         <input type="text" id="titulo" class="campo" placeholder="Nome do vídeo (opcional)" maxlength="80" />
         <label class="idioma">Idioma da fala
           <select id="idioma">
-            <option value="pt" selected>Português</option>
+            <option value="pt">Português</option>
             <option value="en">Inglês</option>
             <option value="es">Espanhol</option>
             <option value="fr">Francês</option>
             <option value="it">Italiano</option>
             <option value="de">Alemão</option>
             <option value="ja">Japonês</option>
-            <option value="auto">Detectar automaticamente</option>
+            <option value="auto" selected>Detectar automaticamente</option>
           </select>
         </label>
       </div>
@@ -81,8 +88,25 @@
         <div class="passo-cab"><span class="num">3</span><h2>Design</h2></div>
         <p class="dica">Comece por um tema pronto. Depois, se quiser, troque a paleta de cores e a fonte.</p>
         <div id="temas" class="cards temas"></div>
+        <div class="acao-tema">
+          <button type="button" id="tema-excluir" class="btn" hidden>Excluir tema selecionado</button>
+          <span id="tema-excluir-erro" class="erro"></span>
+        </div>
+        <details class="avancado" id="novo-tema-box">
+          <summary>+ Criar tema personalizado (cores + fonte)</summary>
+          <div class="grade-canal">
+            <input type="text" id="nt-nome" class="campo" placeholder="Nome do tema" maxlength="60" />
+            <input type="text" id="nt-descricao" class="campo" placeholder="Descrição (opcional)" maxlength="120" />
+            <button type="button" id="nt-criar" class="btn">Criar tema com as cores/fonte escolhidas</button>
+            <span id="nt-erro" class="erro"></span>
+          </div>
+        </details>
         <h3 class="sub-h">Paleta de cores <small>(opcional — substitui as cores do tema)</small></h3>
         <div id="paletas" class="paletas"></div>
+        <details class="avancado" id="detalhes-cores">
+          <summary>+ Editor de cores avançado (círculo cromático)</summary>
+          <div class="editor-cores" id="editor-cores"></div>
+        </details>
         <h3 class="sub-h">Fonte <small>(opcional)</small></h3>
         <div id="fontes" class="fontes"></div>
         <div class="amostra" id="amostra"><span class="am-titulo">A Selic <em>define</em> tudo</span><span class="am-num">13,75%</span></div>
@@ -91,7 +115,13 @@
       <!-- Passo 4: ritmo -->
       <div class="passo">
         <div class="passo-cab"><span class="num">4</span><h2>Ritmo da edição</h2></div>
-        <div id="estilos" class="cards estilos"></div>
+        <h3 class="sub-h">Duração das cenas</h3>
+        <div id="ritmos-edicao" class="cards ritmos-edicao"></div>
+        <h3 class="sub-h" id="legenda-sync-titulo">Legenda sincronizada</h3>
+        <label class="idioma" id="legenda-sync-label">
+          <input type="checkbox" id="legendas-ativas" checked />
+          <span id="legenda-sync-texto">Mostrar palavras na tela acompanhando a narração</span>
+        </label>
       </div>
 
       <!-- Passo 5: imagens -->

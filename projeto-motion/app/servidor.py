@@ -4,6 +4,7 @@
 """
 from __future__ import annotations
 
+from copy import deepcopy
 import json
 import re
 import os
@@ -11,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import unicodedata
 from pathlib import Path
 from typing import Optional
 
@@ -20,7 +22,7 @@ from fastapi.staticfiles import StaticFiles
 
 from pipeline import biblioteca, llm, roteiro_externo
 from pipeline.canais import FONTES, PALETAS, criar_canal, listar_canais, overrides_design
-from pipeline.comum import PROJETOS, RAIZ, Caminhos, carregar_projeto
+from pipeline.comum import CONFIG, PROJETOS, RAIZ, Caminhos, carregar_projeto
 from pipeline.edicao import (EdicaoInvalida, ajustar_tempos, cenas_editaveis, dividir_cena, editar_cena,
                              remover_cena)
 from pipeline.imagens import EXTENSOES as EXT_MIDIA
@@ -28,7 +30,8 @@ from pipeline.imagens import adicionar_imagem, listar_imagens, pasta_imagens, re
 from pipeline.m08_resolver_config import listar_presets
 from pipeline.m09_motor_decisao import carregar_catalogo
 from pipeline.m13_renderizar import pasta_previews
-from pipeline.projetos import FORMATOS, criar_projeto, gerar_id, listar_projetos
+from pipeline.projetos import FORMATOS, criar_projeto, excluir_projeto, gerar_id, listar_projetos
+from pipeline.schemas.config import Tema
 
 app = FastAPI(title="Motion Studio")
 ESTATICO = Path(__file__).parent / "static"
@@ -85,9 +88,12 @@ def index() -> str:
 @app.get("/api/opcoes")
 def opcoes() -> dict:
     ia = llm.disponivel()
+    temas = listar_presets("temas")
+    for t in temas:
+        t["custom"] = str(t.get("id", "")).startswith("tema_custom_")
     return {
         "canais": listar_canais(),
-        "temas": listar_presets("temas"),
+        "temas": temas,
         "estilos": listar_presets("estilos"),
         "paletas": PALETAS,
         "fontes": FONTES,
@@ -99,7 +105,101 @@ def opcoes() -> dict:
             {"id": "9x16", "nome": "Shorts / Reels", "descricao": "Vertical 9:16"},
             {"id": "1x1", "nome": "Quadrado", "descricao": "1:1"},
         ],
+        "ritmos_edicao": [
+            {"id": "rapido", "nome": "Rápido", "descricao": "Cenas curtas e dinâmicas (1-4s)"},
+            {"id": "medio", "nome": "Médio", "descricao": "Ritmo balanceado (1.5-8s)"},
+            {"id": "lento", "nome": "Lento", "descricao": "Cenas longas para absorver (2-10s)"},
+        ],
     }
+
+
+def _slug(s: str) -> str:
+    base = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode().lower()
+    base = re.sub(r"[^a-z0-9]+", "_", base).strip("_")
+    return base or "tema"
+
+
+def _ids_tema_em_uso() -> set[str]:
+    em_uso: set[str] = set()
+    for c in listar_canais():
+        t = c.get("tema_padrao")
+        if t:
+            em_uso.add(t)
+    for p in PROJETOS.glob("*/projeto.json"):
+        try:
+            d = json.loads(p.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            continue
+        t = d.get("tema_id")
+        if t:
+            em_uso.add(t)
+    return em_uso
+
+
+@app.post("/api/temas")
+def criar_tema_custom(payload: dict = Body(...)) -> dict:
+    nome = str(payload.get("nome", "")).strip()
+    if not nome:
+        raise HTTPException(400, "Nome do tema é obrigatório")
+    descricao = str(payload.get("descricao", "")).strip()
+    base_id = str(payload.get("base_tema_id") or "tema_escuro_dourado")
+    cores = payload.get("cores") or {}
+    fonte_id = payload.get("fonte_id")
+
+    temas = listar_presets("temas")
+    base = next((t for t in temas if t.get("id") == base_id), None)
+    if not base:
+        raise HTTPException(400, f"Tema base não encontrado: {base_id}")
+
+    tema = deepcopy(base)
+    tema["schema_version"] = 1
+    tema["nome"] = nome
+    tema["descricao"] = descricao or f"Tema personalizado baseado em {base.get('nome', base_id)}"
+
+    if not isinstance(cores, dict):
+        raise HTTPException(400, "Cores inválidas")
+    tema["cores"] = {**(tema.get("cores") or {}), **cores}
+
+    if fonte_id:
+        fonte = next((f for f in FONTES if f["id"] == fonte_id), None)
+        if not fonte:
+            raise HTTPException(400, f"Fonte inválida: {fonte_id}")
+        tip = tema.setdefault("tipografia", {})
+        tip["fonte_titulo"] = {"familia": fonte["familia"], "peso": fonte["peso"]}
+        tip["fonte_numero"] = {"familia": fonte["familia"], "peso": fonte["peso"]}
+        tip["fonte_corpo"] = {"familia": fonte["familia"], "peso": 500}
+
+    # valida e normaliza formato final conforme schema
+    tema_model = Tema.model_validate(tema)
+    tema = tema_model.model_dump()
+
+    base_slug = _slug(nome)
+    tema_id = f"tema_custom_{base_slug}"
+    tema_path = CONFIG / "temas" / f"{tema_id}.json"
+    n = 2
+    while tema_path.exists():
+        tema_id = f"tema_custom_{base_slug}_{n}"
+        tema_path = CONFIG / "temas" / f"{tema_id}.json"
+        n += 1
+
+    tema["id"] = tema_id
+    tema_path.write_text(json.dumps(tema, ensure_ascii=False, indent=2), encoding="utf-8")
+    tema["custom"] = True
+    return tema
+
+
+@app.delete("/api/temas/{tema_id}")
+def excluir_tema(tema_id: str) -> dict:
+    if not re.fullmatch(r"[A-Za-z0-9_\-]+", tema_id):
+        raise HTTPException(400, "ID de tema inválido")
+    if tema_id in _ids_tema_em_uso():
+        raise HTTPException(409, "Tema está em uso por canal ou projeto")
+
+    p = CONFIG / "temas" / f"{tema_id}.json"
+    if not p.exists():
+        raise HTTPException(404, "Tema não encontrado")
+    p.unlink()
+    return {"ok": True}
 
 
 @app.post("/api/canais")
@@ -137,11 +237,14 @@ async def criar(
     estilo_id: str = Form(""),
     paleta_id: str = Form(""),
     fonte_id: str = Form(""),
+    paleta_override: str = Form("{}"),
     formatos: str = Form("16x9"),
     modelo: str = Form("small"),
     idioma: str = Form("pt"),
     usar_ia: bool = Form(True),
     roteiro_modo: str = Form(""),
+    ritmo_edicao: str = Form("medio"),
+    legendas_sincronizadas: bool = Form(True),
     imagens: list[UploadFile] = File([]),
     imagens_meta: str = Form("[]"),
     midias_ids: str = Form(""),
@@ -155,6 +258,8 @@ async def criar(
         raise HTTPException(400, "Modelo de transcrição inválido")
     if idioma not in IDIOMAS:
         raise HTTPException(400, "Idioma inválido")
+    if ritmo_edicao not in {"rapido", "medio", "lento"}:
+        raise HTTPException(400, "Ritmo de edição inválido")
     if canal_id not in {c["id"] for c in listar_canais()}:
         raise HTTPException(400, "Canal não existe")
     if roteiro_modo and roteiro_modo not in {"ia", "regras", "externo"}:
@@ -166,10 +271,17 @@ async def criar(
         overrides = overrides_design(paleta_id or None, fonte_id or None)
         meta = json.loads(imagens_meta or "[]")
         meta_novas = json.loads(midias_novas_meta or "[]")
+        cores_override = json.loads(paleta_override or "{}")
     except (ValueError, json.JSONDecodeError) as e:
         raise HTTPException(400, str(e))
     if not isinstance(meta, list) or not isinstance(meta_novas, list):
         raise HTTPException(400, "imagens_meta e midias_novas_meta devem ser listas")
+    # Mescla do editor avançado: overrides_design já retorna o payload de tema.
+    # Aqui só combinamos as chaves de cores por cima desse payload.
+    if cores_override:
+        if overrides is None:
+            overrides = {}
+        overrides["cores"] = {**(overrides.get("cores") or {}), **cores_override}
     ids_banco = [i.strip() for i in midias_ids.split(",") if i.strip()]
     conhecidos = {m["id"] for m in biblioteca.listar()}
     if any(i not in conhecidos for i in ids_banco):
@@ -192,7 +304,8 @@ async def criar(
             criar_projeto(projeto_id, tmp_path, canal=canal_id, titulo=titulo, modelo=modelo, formatos=lista,
                           tema_id=tema_id or None, estilo_id=estilo_id or None,
                           overrides_tema=overrides or None, usar_ia=usar_ia, roteiro_externo=externo,
-                          idioma=idioma if idioma != "auto" else None)
+                          idioma=idioma if idioma != "auto" else None, ritmo_edicao=ritmo_edicao,
+                          legendas_sincronizadas=legendas_sincronizadas)
         except ValueError as e:
             raise HTTPException(400, str(e))
         finally:
@@ -207,6 +320,18 @@ async def criar(
     # com roteiro externo, só transcreve e divide em trechos; o vídeo sai depois que o roteiro for colado
     threading.Thread(target=_executar_job, args=(projeto_id, lista, "m04" if externo else None), daemon=True).start()
     return {"id": projeto_id, "titulo": titulo}
+
+
+@app.delete("/api/projetos/{projeto_id}")
+def excluir(projeto_id: str) -> dict:
+    with _lock:
+        try:
+            excluir_projeto(projeto_id)
+        except (FileNotFoundError, ValueError) as e:
+            raise HTTPException(404 if isinstance(e, FileNotFoundError) else 400, str(e))
+        # Remove o job de memória se existir
+        _jobs.pop(projeto_id, None)
+    return {"mensagem": f"Projeto '{projeto_id}' excluído com sucesso."}
 
 
 def _tags(meta: dict) -> list[str]:
@@ -452,6 +577,19 @@ def gerar_novamente(projeto_id: str, formato: Optional[str] = None) -> dict:
                          "formatos": lista, "prontos": [], "log": [], "erro": None}
     threading.Thread(target=_executar_job, args=(projeto_id, lista), daemon=True).start()
     return {"ok": True}
+
+
+@app.get("/api/projetos/{projeto_id}/audio")
+def audio(projeto_id: str) -> FileResponse:
+    try:
+        c = Caminhos(projeto_id)
+        projeto = carregar_projeto(c)
+    except (ValueError, FileNotFoundError):
+        raise HTTPException(404, "Projeto não encontrado")
+    arq = c.entrada(projeto.entrada.audio)
+    if not arq.exists():
+        raise HTTPException(404, "Áudio não encontrado")
+    return FileResponse(arq, media_type="audio/wav")
 
 
 @app.get("/api/projetos/{projeto_id}/video/{formato}")

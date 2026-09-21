@@ -15,6 +15,12 @@ import * as ImagemDestaque from "./ImagemDestaque";
 import * as MidiaCheia from "./MidiaCheia";
 import * as Pergunta from "./Pergunta";
 import * as TextoCorrido from "./TextoCorrido";
+import * as CTAFinal from "./CTAFinal";
+import * as GraficoPizza from "./GraficoPizza";
+import * as Timeline from "./Timeline";
+import * as Planilha from "./Planilha";
+import * as TextoLongo from "./TextoLongo";
+import * as LegendaSincronizada from "./LegendaSincronizada";
 
 export type TemplateEntry = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -78,6 +84,36 @@ export const registry = {
     Component: Pergunta.Pergunta,
     schema: Pergunta.schema,
     defaultProps: Pergunta.defaultProps,
+  },
+  CTAFinal: {
+    Component: CTAFinal.CTAFinal,
+    schema: CTAFinal.ctaFinalSchema,
+    defaultProps: CTAFinal.defaultProps,
+  },
+  TextoLongo: {
+    Component: TextoLongo.TextoLongo,
+    schema: TextoLongo.schema,
+    defaultProps: TextoLongo.defaultProps,
+  },
+  GraficoPizza: {
+    Component: GraficoPizza.GraficoPizza,
+    schema: GraficoPizza.graficoPizzaSchema,
+    defaultProps: GraficoPizza.defaultProps,
+  },
+  Timeline: {
+    Component: Timeline.Timeline,
+    schema: Timeline.timelineSchema,
+    defaultProps: Timeline.defaultProps,
+  },
+  Planilha: {
+    Component: Planilha.Planilha,
+    schema: Planilha.planilhaSchema,
+    defaultProps: Planilha.defaultProps,
+  },
+  LegendaSincronizada: {
+    Component: LegendaSincronizada.LegendaSincronizada,
+    schema: LegendaSincronizada.schema,
+    defaultProps: LegendaSincronizada.defaultProps,
   },
 } satisfies Record<string, TemplateEntry>;
 

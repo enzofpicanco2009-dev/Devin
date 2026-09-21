@@ -215,6 +215,91 @@ def props_pergunta(cena: Cena, cfg: ConfigResolvida, avisos: list[str]) -> dict:
     return {**props_base(cena, cfg), "texto": texto, "tamanhoFonte": round(tam)}
 
 
+def props_texto_longo(cena: Cena, cfg: ConfigResolvida, avisos: list[str]) -> dict:
+    s = _sem(cena)
+    texto = s.get("texto") or cena.texto
+    destaques = [str(d) for d in s.get("destaque_frases", s.get("destaque", []))][:3]
+    return {**props_base(cena, cfg), "texto": texto, "destaque_frases": destaques}
+
+
+def props_cta_final(cena: Cena, cfg: ConfigResolvida, avisos: list[str]) -> dict:
+    s = _sem(cena)
+    texto_principal = str(s.get("texto_principal", s.get("cta", "Inscreva-se")))
+    subtexto = str(s.get("subtexto", "")) or None
+    return {
+        **props_base(cena, cfg),
+        "texto_principal": texto_principal,
+        "subtexto": subtexto,
+        "mostrar_logo": bool(s.get("mostrar_logo", False)),
+        "estilo_botao": "contorno" if s.get("estilo_botao") == "contorno" else "solido",
+        "logo_src": s.get("logo_src"),
+    }
+
+
+def props_grafico_pizza(cena: Cena, cfg: ConfigResolvida, avisos: list[str]) -> dict:
+    s = _sem(cena)
+    fatias_sem = s.get("fatias", [])
+    fatias = []
+    for item in fatias_sem[:6]:
+        try:
+            fatias.append({"rotulo": str(item.get("rotulo", "")), "valor": float(item.get("valor", 0))})
+        except Exception:
+            continue
+    if len(fatias) < 2:
+        fatias = [{"rotulo": "A", "valor": 60.0}, {"rotulo": "B", "valor": 40.0}]
+        avisos.append(f"{cena.id}: fatias insuficientes para GraficoPizza — usando fallback")
+    return {
+        **props_base(cena, cfg),
+        "titulo": s.get("titulo", ""),
+        "fatias": fatias,
+        "estilo": "pizza" if s.get("estilo") == "pizza" else "donut",
+        "destacar_indice": s.get("destacar_indice"),
+    }
+
+
+def props_timeline(cena: Cena, cfg: ConfigResolvida, avisos: list[str]) -> dict:
+    s = _sem(cena)
+    eventos_sem = s.get("eventos", [])
+    eventos = []
+    for e in eventos_sem[:6]:
+        marcador = str(e.get("marcador", "")).strip()
+        descricao = str(e.get("descricao", "")).strip()
+        if marcador and descricao:
+            eventos.append({"marcador": marcador, "descricao": descricao})
+    if len(eventos) < 2:
+        eventos = [
+            {"marcador": "Inicio", "descricao": "Ponto de partida"},
+            {"marcador": "Agora", "descricao": "Ponto atual"},
+        ]
+        avisos.append(f"{cena.id}: eventos insuficientes para Timeline — usando fallback")
+    return {
+        **props_base(cena, cfg),
+        "titulo": s.get("titulo", ""),
+        "eventos": eventos,
+        "orientacao": "vertical" if s.get("orientacao") == "vertical" else "horizontal",
+    }
+
+
+def props_planilha(cena: Cena, cfg: ConfigResolvida, avisos: list[str]) -> dict:
+    s = _sem(cena)
+    colunas = [str(c) for c in s.get("colunas", [])][:4]
+    linhas = [[str(v) for v in linha][:4] for linha in s.get("linhas", [])][:5]
+    if len(colunas) < 2 or len(linhas) < 1:
+        colunas = ["Item", "Valor"]
+        linhas = [["Exemplo", "-"], ["Outro", "-"]]
+        avisos.append(f"{cena.id}: dados insuficientes para Planilha — usando fallback")
+    linhas = [linha + [""] * (len(colunas) - len(linha)) if len(linha) < len(colunas) else linha[:len(colunas)]
+             for linha in linhas]
+    return {
+        **props_base(cena, cfg),
+        "titulo": s.get("titulo", ""),
+        "colunas": colunas,
+        "linhas": linhas,
+        "destacar_coluna": s.get("destacar_coluna"),
+        "destacar_linha": s.get("destacar_linha"),
+    }
+
+
 def fazer_props_imagem(mapa_imagens: dict[str, str]):
     def props_imagem(cena: Cena, cfg: ConfigResolvida, avisos: list[str]) -> dict:
         s = _sem(cena)
@@ -261,6 +346,11 @@ APLICADORES = {
     "GraficoBarras": props_grafico,
     "SetaTendencia": props_seta,
     "Pergunta": props_pergunta,
+    "TextoLongo": props_texto_longo,
+    "CTAFinal": props_cta_final,
+    "GraficoPizza": props_grafico_pizza,
+    "Timeline": props_timeline,
+    "Planilha": props_planilha,
 }
 
 

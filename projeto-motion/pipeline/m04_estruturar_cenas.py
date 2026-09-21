@@ -13,6 +13,49 @@ ETAPA = "m04"
 BLOCO_EXTERNO_S = 3.0  # tamanho dos trechos minutados quando outra IA decide o agrupamento
 
 
+def adaptar_ritmo_por_edicao(r: Ritmo, ritmo_edicao: str) -> Ritmo:
+    """Adapta o Ritmo baseado no ritmo de edição escolhido.
+    
+    - "rapido": durações mais curtas, transições rápidas (1s-4s)
+    - "medio": duração normal (1.5s-8s)
+    - "lento": durações mais longas, mais tempo para absorver info (2s-10s)
+    """
+    from copy import deepcopy
+    r_adaptado = deepcopy(r)
+    
+    if ritmo_edicao == "rapido":
+        r_adaptado.duracao_cena_min_s = max(0.8, r.duracao_cena_min_s * 0.6)
+        r_adaptado.duracao_cena_max_s = min(4.0, r.duracao_cena_max_s * 0.5)
+        r_adaptado.duracao_cena_alvo_s = 2.0
+        r_adaptado.pausa_corte_s = min(0.2, r.pausa_corte_s * 0.5)
+        r_adaptado.palavras_por_segundo_alvo = 3.5  # mais rápido
+    elif ritmo_edicao == "lento":
+        r_adaptado.duracao_cena_min_s = r.duracao_cena_min_s * 1.3
+        r_adaptado.duracao_cena_max_s = r.duracao_cena_max_s * 1.5
+        r_adaptado.duracao_cena_alvo_s = 5.5
+        r_adaptado.pausa_corte_s = r.pausa_corte_s * 1.5
+        r_adaptado.palavras_por_segundo_alvo = 1.8  # mais lento
+    
+    return r_adaptado
+
+
+def calcular_duracao_dinamica(num_palavras: int, r: Ritmo) -> float:
+    """Calcula a duração ideal de uma cena baseado no número de palavras.
+    
+    Usa o ritmo para determinar quantas palavras por segundo a cena deve ter.
+    Respeita os limites min/max de duração.
+    """
+    if num_palavras == 0:
+        return r.duracao_cena_min_s
+    
+    # Calcular duração baseada em palavras_por_segundo
+    duracao_ideal = num_palavras / r.palavras_por_segundo_alvo
+    
+    # Aplicar limites
+    duracao = max(r.duracao_cena_min_s, min(r.duracao_cena_max_s, duracao_ideal))
+    return round(duracao, 2)
+
+
 @dataclass
 class Grupo:
     start: float
@@ -200,6 +243,13 @@ def executar(projeto_id: str, force: bool = False) -> None:
 
     cfg = resolver(projeto)
     r = cfg.estilo.ritmo
+    
+    # Adaptar ritmo baseado no ritmo de edição do projeto
+    r = adaptar_ritmo_por_edicao(r, projeto.decisao.ritmo_edicao)
+    print(f"[{ETAPA}] ritmo: {projeto.decisao.ritmo_edicao} | "
+          f"duração cena: {r.duracao_cena_min_s:.1f}–{r.duracao_cena_max_s:.1f}s | "
+          f"palavras/seg: {r.palavras_por_segundo_alvo:.1f}")
+    
     trans = json.loads(c.transcricao_json.read_text(encoding="utf-8"))
     segmentos = limitar_ao_audio(trans["segmentos"], t.audio.duracao_s)
 

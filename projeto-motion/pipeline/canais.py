@@ -44,6 +44,15 @@ FONTES: list[dict] = [
     {"id": "mono", "nome": "Mono", "familia": "JetBrains Mono, Liberation Mono, Courier New, monospace", "peso": 700},
     {"id": "sistema", "nome": "Sistema", "familia": "system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
      "peso": 800},
+    # Manuscritas e cursivas
+    {"id": "script", "nome": "Script Elegante", "familia": "Brush Script MT, Lucida Handwriting, cursive", "peso": 400},
+    {"id": "handwriting", "nome": "Manuscrita", "familia": "Segoe Print, Lucida Handwriting, Comic Sans MS, cursive", "peso": 600},
+    {"id": "calligraphy", "nome": "Caligrafia", "familia": "Palatino Linotype, Palatino, Garamond, serif", "peso": 700},
+    {"id": "comic", "nome": "Informal", "familia": "Comic Sans MS, Chalkboard SE, Bradley Hand, cursive", "peso": 600},
+    {"id": "cursiva_formal", "nome": "Cursiva Formal", "familia": "Edwardian Script ITC, Lucida Handwriting, cursive", "peso": 400},
+    {"id": "brush", "nome": "Pincel", "familia": "Brush Script MT, Lucida Calligraphy, cursive", "peso": 600},
+    {"id": "gothic", "nome": "Gothic", "familia": "Blackadder ITC, Old English Text, serif", "peso": 700},
+    {"id": "decorativa", "nome": "Decorativa", "familia": "Impact, Charcoal, sans-serif", "peso": 900},
 ]
 
 

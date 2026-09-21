@@ -1,6 +1,6 @@
 """CLI: python -m pipeline <comando> --projeto <id> [--force] [--formato 16x9]
 
-Comandos: m01 m04 m09 m12 m13 m14 run validar novo
+Comandos: m01 m04 m09 m12 m13 m14 run validar novo excluir
 """
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from pathlib import Path
 from . import (m01_transcrever, m04_estruturar_cenas, m09_motor_decisao,
                m12_aplicar_tema, m13_renderizar, m14_compor)
 from .comum import Caminhos, carregar_timeline
-from .projetos import criar_projeto
+from .projetos import criar_projeto, excluir_projeto
 
 ORDEM = ["m01", "m04", "m09", "m12", "m13", "m14"]
 MODULOS = {
@@ -43,6 +43,14 @@ def cmd_novo(a):
     print(f"Projeto criado em {raiz}. Coloque o áudio em entrada/ e rode: python -m pipeline run --projeto {a.projeto}")
 
 
+def cmd_excluir(a):
+    try:
+        excluir_projeto(a.projeto)
+    except (FileNotFoundError, ValueError) as e:
+        sys.exit(str(e))
+    print(f"Projeto '{a.projeto}' excluído com sucesso.")
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(prog="python -m pipeline")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -58,13 +66,18 @@ def main(argv=None):
     n.add_argument("--canal", default="canal_exemplo")
     n.add_argument("--audio", default=None, help="arquivo de áudio a copiar para entrada/")
     n.add_argument("--titulo", default=None)
-    n.add_argument("--modelo", default="small")
+    n.add_argument("--modelo", default="tiny")
     n.add_argument("--tema", default=None, help="preset em config/temas/")
     n.add_argument("--estilo", default=None, help="preset em config/estilos/")
+    
+    e = sub.add_parser("excluir")
+    e.add_argument("--projeto", required=True)
 
     a = p.parse_args(argv)
     if a.cmd == "novo":
         return cmd_novo(a)
+    if a.cmd == "excluir":
+        return cmd_excluir(a)
     if a.cmd == "validar":
         return cmd_validar(a)
     if a.cmd == "run":

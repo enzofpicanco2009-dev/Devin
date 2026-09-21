@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+export const palavraTempoSchema = z.object({
+  w: z.string(),
+  s: z.number().min(0),
+  e: z.number().min(0),
+});
+
 export const cenaRenderSchema = z.object({
   id: z.string(),
   indice: z.number().int(),
@@ -7,6 +13,7 @@ export const cenaRenderSchema = z.object({
   render_end_s: z.number().positive(),
   decisao: z.object({ template: z.string() }),
   props_finais: z.record(z.string(), z.unknown()),
+  palavras: z.array(palavraTempoSchema).default([]),
 });
 
 export const formatoSchema = z.object({
@@ -19,10 +26,16 @@ export const formatoSchema = z.object({
 export const timelineSchema = z.object({
   schema_version: z.number().int(),
   projeto_id: z.string(),
-  audio: z.object({ duracao_s: z.number().positive() }),
+  audio: z.object({ duracao_s: z.number().positive(), arquivo: z.string().optional() }),
   formato: formatoSchema,
   cenas: z.array(cenaRenderSchema),
   cor_fundo: z.string().default("#0D0D0D"),
+  config_video: z
+    .object({
+      legendas_ativas: z.boolean().default(false),
+      palavras_por_linha: z.number().int().positive().default(5),
+    })
+    .default({ legendas_ativas: false, palavras_por_linha: 5 }),
 });
 
 export type Timeline = z.infer<typeof timelineSchema>;
@@ -31,9 +44,13 @@ export type CenaRender = z.infer<typeof cenaRenderSchema>;
 export const timelineVazia: Timeline = {
   schema_version: 1,
   projeto_id: "preview",
-  audio: { duracao_s: 8 },
+  audio: { duracao_s: 8, arquivo: undefined },
   formato: { id: "16x9", largura: 1920, altura: 1080, fps: 30 },
   cor_fundo: "#0D0D0D",
+  config_video: {
+    legendas_ativas: false,
+    palavras_por_linha: 5,
+  },
   cenas: [
     {
       id: "c001",
@@ -41,6 +58,7 @@ export const timelineVazia: Timeline = {
       render_start_s: 0,
       render_end_s: 4,
       decisao: { template: "TituloImpacto" },
+      palavras: [],
       props_finais: {
         texto: "A Selic é a taxa que define tudo.",
         duracaoEmSegundos: 4,
@@ -53,6 +71,7 @@ export const timelineVazia: Timeline = {
       render_start_s: 4,
       render_end_s: 8,
       decisao: { template: "TituloImpacto" },
+      palavras: [],
       props_finais: {
         texto: "E quase ninguém entende como ela funciona.",
         duracaoEmSegundos: 4,

@@ -27,7 +27,7 @@ class RenderConfig(BaseModel):
 
 
 class TranscricaoConfig(BaseModel):
-    modelo: str = "small"
+    modelo: str = "tiny"
     device: Literal["auto", "cpu", "cuda"] = "auto"
     compute_type: str = "int8"
     word_timestamps: bool = True
@@ -40,6 +40,7 @@ class DecisaoConfig(BaseModel):
     modelo: Optional[str] = None
     temperatura: float = 0.3
     template_fixo: Optional[str] = "TituloImpacto"
+    ritmo_edicao: Literal["rapido", "medio", "lento"] = "medio"  # influencia duração dinâmica das cenas
 
 
 class Projeto(BaseModel):
@@ -73,6 +74,7 @@ class Ritmo(BaseModel):
     pausa_interna_min_s: float = 0.15
     gap_max_s: float = 3.0
     fundir_curtas: bool = True
+    palavras_por_segundo_alvo: float = 2.5  # usado para duração dinâmica de cenas
 
 
 class Spring(BaseModel):
