@@ -36,18 +36,32 @@ export const TituloImpacto: React.FC<TituloImpactoProps> = (props) => {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const translateY = interpolate(
-    entrada,
-    [0, 1],
-    [props.deslocamentoEntradaPx * escala, 0],
-  );
+  const translateY =
+    props.animacaoEntrada === "de_baixo"
+      ? interpolate(entrada, [0, 1], [props.deslocamentoEntradaPx * 4.2 * escala, 0])
+      : props.animacaoEntrada === "de_cima"
+        ? interpolate(entrada, [0, 1], [-props.deslocamentoEntradaPx * 4.2 * escala, 0])
+        : 0;
   const opacidadeOut = interpolate(
     frame,
     [durationInFrames - props.saidaFrames, durationInFrames],
     [1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
+  const progressoSaida = interpolate(
+    frame,
+    [durationInFrames - props.saidaFrames, durationInFrames],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
   const opacidade = Math.min(opacidadeIn, opacidadeOut);
+  const deslocSaida =
+    props.animacaoSaida === "para_cima"
+      ? -progressoSaida * 180 * escala
+      : props.animacaoSaida === "para_baixo"
+        ? progressoSaida * 180 * escala
+        : 0;
+  const deslocTotal = translateY + deslocSaida;
 
   const destaques = new Set(props.palavrasDestaque.map(normalizar));
 
@@ -62,7 +76,7 @@ export const TituloImpacto: React.FC<TituloImpactoProps> = (props) => {
           paddingLeft: `${props.safeArea.lados}%`,
           paddingRight: `${props.safeArea.lados}%`,
           opacity: opacidade,
-          transform: `translateY(${translateY}px)`,
+          transform: `translateY(${deslocTotal}px)`,
         }}
       >
         <div

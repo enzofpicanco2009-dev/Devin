@@ -65,6 +65,10 @@
         <div class="passo-cab"><span class="num">2</span><h2>Para qual canal?</h2></div>
         <p class="dica">O canal é um preset: guarda o design padrão, o público e a chamada final.</p>
         <div id="canais" class="cards canais"></div>
+        <div class="acao-tema">
+          <button type="button" id="canal-excluir" class="btn" disabled>Excluir canal selecionado</button>
+          <span id="canal-excluir-erro" class="erro"></span>
+        </div>
         <details id="novo-canal" class="avancado">
           <summary>+ Criar novo canal</summary>
           <div class="grade-canal">
@@ -119,21 +123,30 @@
         <div id="ritmos-edicao" class="cards ritmos-edicao"></div>
         <h3 class="sub-h" id="legenda-sync-titulo">Legenda sincronizada</h3>
         <label class="idioma" id="legenda-sync-label">
-          <input type="checkbox" id="legendas-ativas" checked />
-          <span id="legenda-sync-texto">Mostrar palavras na tela acompanhando a narração</span>
+          <input type="checkbox" id="legendas-ativas" />
+          <span id="legenda-sync-texto">Legenda de rodapé em todas as cenas (opcional — para legenda grande no centro, use o template “Legenda sincronizada” numa cena)</span>
         </label>
       </div>
 
       <!-- Passo 5: imagens -->
       <div class="passo">
         <div class="passo-cab"><span class="num">5</span><h2>Imagens e vídeos <small>(opcional)</small></h2></div>
-        <p class="dica">Seu banco permanente de mídias. Marque as que podem aparecer neste vídeo: a IA recebe a <strong>descrição</strong> de cada uma para decidir quando usá-las.</p>
-        <div id="banco" class="banco"></div>
-        <label class="drop drop-img">
-          <input type="file" id="midias" accept="image/*,video/mp4,video/webm,video/quicktime" multiple hidden />
-          <strong>Adicionar ao banco</strong><span>arraste ou clique · PNG, JPG, WEBP, SVG, MP4, WEBM, MOV</span>
-        </label>
-        <div id="lista-midias" class="lista-imagens"></div>
+        <details class="av-fundo-bloco" id="midias-box">
+          <summary>Gerenciar imagens e vídeos</summary>
+          <div class="midias-scroll">
+            <p class="dica">Seu banco permanente de mídias. Marque as que podem aparecer neste vídeo: a IA recebe a <strong>descrição</strong> de cada uma para decidir quando usá-las.</p>
+            <div id="banco" class="banco"></div>
+            <label class="drop drop-img">
+              <input type="file" id="midias" accept="image/*,video/mp4,video/webm,video/quicktime" multiple hidden />
+              <strong>Adicionar ao banco</strong><span>arraste ou clique · PNG, JPG, WEBP, SVG, MP4, WEBM, MOV</span>
+            </label>
+            <div id="lista-midias" class="lista-imagens"></div>
+            <div class="acao">
+              <button type="button" class="btn" id="midias-publicar-banco" disabled>Publicar no banco</button>
+              <span id="midias-publicar-erro" class="erro"></span>
+            </div>
+          </div>
+        </details>
       </div>
 
       <!-- Passo 6: publicar -->
@@ -158,8 +171,26 @@
         <div class="passo-cab"><span class="num">7</span><h2>Quem escreve o roteiro das cenas</h2></div>
         <div id="roteiro-modos" class="cards">
           <button type="button" class="card" data-id="externo"><div class="info"><strong>Outra IA (ChatGPT, Gemini…)</strong><small>Transcrevo o áudio, você copia o prompt, cola o roteiro que a IA devolver e eu gero o vídeo.</small></div></button>
+          <button type="button" class="card" data-id="json_direto"><div class="info"><strong>JSON direto</strong><small>Você cola o JSON final do roteiro e eu gero o vídeo direto, sem etapa manual de copiar prompt.</small></div></button>
           <button type="button" class="card" data-id="ia"><div class="info"><strong>IA local (Ollama)</strong><small id="ia-rotulo">Roda no seu PC, sem custo.</small></div></button>
           <button type="button" class="card" data-id="regras"><div class="info"><strong>Automático por regras</strong><small>Sem IA: recorta a fala e escolhe o template por padrões (mais simples).</small></div></button>
+        </div>
+        <div id="novo-json-direto-box" class="avancado" hidden>
+          <div class="ext-cab"><strong id="novo-json-direto-title">Roteiro JSON direto</strong></div>
+          <p class="dica" id="novo-json-direto-dica">Cole aqui o JSON completo no formato {"cenas": [...]}.</p>
+          <textarea id="novo-json-direto" class="campo ext-area" spellcheck="false" placeholder='{"cenas": [ ... ]}'></textarea>
+        </div>
+        <div id="novo-ext-instrucoes-box" class="avancado" hidden>
+          <div class="ext-cab"><strong id="novo-ext-instrucoes-title">Instruções da IA</strong><span><button type="button" class="btn" id="novo-ext-criar-versao">Criar versão</button> <button type="button" class="btn" id="novo-ext-excluir-versao" disabled>Excluir versão</button> <button type="button" class="btn" id="novo-ext-reset-instrucoes">Voltar ao padrão</button></span></div>
+          <p class="dica" id="novo-ext-instrucoes-dica">Estas instruções viram padrão para todos os próximos vídeos no modo "Outra IA".</p>
+          <textarea id="novo-ext-instrucoes" class="campo ext-area" spellcheck="false"></textarea>
+          <p class="dica" id="novo-ext-versao-dica" hidden>Versão personalizada do prompt completo (inicialmente igual ao que será copiado).</p>
+          <textarea id="novo-ext-versao" class="campo ext-area" spellcheck="false" hidden placeholder=""></textarea>
+        </div>
+        <div id="novo-ia-instrucoes-box" class="avancado" hidden>
+          <div class="ext-cab"><strong id="novo-ia-instrucoes-title">Regras da IA local</strong><span><button type="button" class="btn" id="novo-ia-reset-instrucoes">Voltar ao padrão</button></span></div>
+          <p class="dica" id="novo-ia-instrucoes-dica">A IA local usa estas regras para decidir entre template puro, template + mídia de fundo, ou só mídia, além de duração e ritmo por template.</p>
+          <textarea id="novo-ia-instrucoes" class="campo ext-area" spellcheck="false"></textarea>
         </div>
       </div>
 
@@ -176,6 +207,15 @@
     <h1 id="prog-titulo"></h1>
     <p class="sub" id="prog-sub"></p>
 
+    <div class="prog-head">
+      <strong id="prog-status-text">Gerando...</strong>
+      <span id="prog-status-pct">0%</span>
+    </div>
+    <div id="prog-bar-wrap" class="prog-bar-wrap" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div id="prog-bar" class="prog-bar"></div>
+    </div>
+    <p id="prog-detail" class="prog-detail" hidden></p>
+
     <ol id="etapas" class="etapas"></ol>
     <pre id="log" class="log" hidden></pre>
 
@@ -183,19 +223,20 @@
       <div class="av-cab"><h2>Roteiro com outra IA</h2><span id="ext-status" class="tag"></span></div>
       <p class="dica">1) Copie o prompt (já vem com a transcrição minutada). 2) Cole no ChatGPT, Gemini ou Claude. 3) Cole aqui o JSON que a IA responder e clique em Gerar.</p>
       <div class="ext-midias">
-        <div class="ext-cab"><strong>Mídias deste vídeo</strong><span><button type="button" class="btn" id="ext-anexar">Anexar do banco</button></span></div>
+        <div class="ext-cab"><strong id="ext-media-title">Mídias deste vídeo</strong><span><button type="button" class="btn" id="ext-anexar">Anexar do banco</button></span></div>
         <p class="dica">Só estas entram no prompt (com nome e descrição). Adicione antes de copiar o prompt.</p>
         <div id="ext-midias-lista" class="chips"></div>
         <div id="ext-banco" class="banco banco-mini" hidden></div>
       </div>
       <div class="ext-grid">
         <div class="ext-col">
-          <div class="ext-cab"><strong>Transcrição minutada</strong><span><button type="button" class="btn" id="ext-copiar-transcricao">Copiar transcrição</button> <button type="button" class="btn-principal" id="ext-copiar-prompt">Copiar prompt completo</button></span></div>
+          <div class="ext-cab"><strong id="ext-transcricao-title">Transcrição minutada</strong><span><button type="button" class="btn" id="ext-copiar-transcricao">Copiar transcrição</button> <button type="button" class="btn-principal" id="ext-copiar-prompt">Copiar prompt completo</button></span></div>
+          <div id="ext-aviso-midias" class="aviso" hidden><span class="ico">⚠</span> <strong>Mídias não encontradas no prompt.</strong> Adicione mídias antes de copiar.</div>
           <textarea id="ext-transcricao" class="campo ext-area" readonly spellcheck="false"></textarea>
           <details class="avancado"><summary>Ver o prompt que será copiado</summary><textarea id="ext-prompt" class="campo ext-area" readonly spellcheck="false"></textarea></details>
         </div>
         <div class="ext-col">
-          <div class="ext-cab"><strong>Roteiro devolvido pela IA (JSON)</strong></div>
+          <div class="ext-cab"><strong id="ext-retorno-title">Roteiro devolvido pela IA (JSON)</strong></div>
           <textarea id="ext-roteiro" class="campo ext-area" placeholder='Cole aqui a resposta da IA, começando com {"cenas": [ ...' spellcheck="false"></textarea>
           <div class="acao"><button type="button" class="btn-principal" id="ext-gerar">Gerar vídeo com este roteiro</button><span id="ext-erro" class="erro"></span></div>
         </div>
@@ -205,13 +246,70 @@
     <section id="ao-vivo" class="ao-vivo" hidden>
       <div class="av-cab"><h2>Produção ao vivo</h2><span id="av-modo" class="tag"></span></div>
       <p class="dica" id="av-dica"></p>
-      <div id="av-rerender" class="av-rerender" hidden>
-        <span><strong id="av-rerender-n"></strong> — o vídeo ainda mostra a versão antiga.</span>
-        <button class="btn-principal" onclick="rerenderizar()">Renderizar de novo</button>
-      </div>
+      <details id="av-fundo" class="av-fundo" hidden>
+        <summary class="av-fundo-sumario"><strong>Fundo das cenas</strong><span id="av-fundo-qtd" class="tag">0 selecionadas</span></summary>
+        <div class="av-fundo-conteudo">
+          <details class="av-fundo-bloco">
+            <summary>Cenas</summary>
+            <p class="dica">Marque as cenas no storyboard e aplique o fundo somente nas selecionadas.</p>
+            <div class="av-fundo-acoes-linha"><button type="button" class="btn" id="av-fundo-selecionar-todas">Selecionar todas</button> <button type="button" class="btn" id="av-fundo-limpar-selecao">Limpar seleção</button></div>
+            <small id="av-fundo-selecao-lista" class="sb-pq">Nenhuma cena selecionada.</small>
+          </details>
+
+          <details class="av-fundo-bloco">
+            <summary>Fundo atual</summary>
+            <div class="av-fundo-grid">
+              <label class="ed-campo"><span>Mídia</span><select id="av-fundo-midia" class="campo"></select></label>
+              <label class="ed-campo"><span>Brilho</span><input id="av-fundo-brilho" class="campo" type="number" step="0.05" min="0.2" max="2.5" value="1" /></label>
+              <label class="ed-campo"><span>Contraste</span><input id="av-fundo-contraste" class="campo" type="number" step="0.05" min="0.2" max="2.5" value="1" /></label>
+              <label class="ed-campo"><span>Saturação</span><input id="av-fundo-saturacao" class="campo" type="number" step="0.05" min="0" max="3" value="1" /></label>
+              <label class="ed-campo"><span>Desfoque (px)</span><input id="av-fundo-blur" class="campo" type="number" step="0.5" min="0" max="20" value="0" /></label>
+              <label class="ed-campo"><span>Opacidade</span><input id="av-fundo-opacidade" class="campo" type="number" step="0.05" min="0" max="1" value="1" /></label>
+              <label class="ed-campo"><span>Escurecer</span><input id="av-fundo-escurecer" class="campo" type="number" step="0.05" min="0" max="0.95" value="0" /></label>
+              <label class="ed-campo"><span>Zoom</span><input id="av-fundo-zoom" class="campo" type="number" step="0.05" min="0.1" max="3" value="1" /></label>
+              <label class="ed-campo"><span>Ajuste</span><select id="av-fundo-fit" class="campo"><option value="cover">Cover</option><option value="contain">Contain</option><option value="fill">Fill</option><option value="fit">Fit (proporcional)</option></select></label>
+              <label class="ed-campo"><span>Posição X (0-1)</span><input id="av-fundo-posx" class="campo" type="number" step="0.05" min="0" max="1" value="0.5" /></label>
+              <label class="ed-campo"><span>Posição Y (0-1)</span><input id="av-fundo-posy" class="campo" type="number" step="0.05" min="0" max="1" value="0.5" /></label>
+              <label class="ed-campo"><span>Blend</span><select id="av-fundo-blend" class="campo"><option value="normal">Normal</option><option value="multiply">Multiply</option><option value="screen">Screen</option><option value="overlay">Overlay</option></select></label>
+            </div>
+            <div class="av-fundo-acoes-linha" style="margin-top:.7rem;"><button type="button" class="btn" id="av-fundo-add-camada">Adicionar camada</button> <button type="button" class="btn" id="av-fundo-limpar-camadas">Limpar camadas</button></div>
+            <small class="sb-pq">A camada base é o Fundo atual. Camadas extras ficam por cima e podem ser reordenadas (Subir/Descer). PNG sem fundo funciona bem aqui para sobrepor em outro fundo.</small>
+            <div id="av-fundo-camadas" class="av-fundo-plano"></div>
+          </details>
+
+          <details class="av-fundo-bloco">
+            <summary>Adicionar fundo</summary>
+            <p class="dica">Dê um nome, selecione as cenas e adicione ao plano. Você pode criar vários fundos e aplicar tudo no render.</p>
+            <div class="av-fundo-acoes-linha"><button type="button" class="btn" id="av-fundo-ia">IA escolher fundos para mim</button><span id="av-fundo-ia-status" class="sb-pq"></span></div>
+            <div class="av-fundo-salvar"><input id="av-fundo-item-nome" class="campo" type="text" placeholder="Nome deste fundo (ex.: Abertura)" /><button type="button" class="btn" id="av-fundo-adicionar-plano">Adicionar ao plano</button></div>
+            <small class="sb-pq">Dica: depois de adicionar, desmarque/marque outras cenas e crie outro fundo.</small>
+          </details>
+
+          <details class="av-fundo-bloco">
+            <summary>Plano de fundos</summary>
+            <div id="av-fundo-plano" class="av-fundo-plano"></div>
+            <div class="av-fundo-acoes-linha"><button type="button" class="btn" id="av-fundo-limpar-plano">Limpar plano</button></div>
+          </details>
+
+          <div class="acao av-fundo-acoes-main">
+            <span class="tag">Os fundos do plano serão aplicados quando você renderizar.</span>
+            <span class="erro" id="av-fundo-erro"></span>
+          </div>
+
+          <details class="av-fundo-bloco av-fundo-avancado">
+            <summary>Ações avançadas</summary>
+            <p class="dica">Se precisar, ainda é possível aplicar tudo de uma vez no plano usando "Selecionar todas" antes de adicionar.</p>
+          </details>
+        </div>
+      </details>
       <div id="storyboard" class="storyboard"></div>
     </section>
     <div id="prog-erro" class="erro-box" hidden></div>
+
+    <div id="av-rerender" class="av-rerender" hidden>
+      <span><strong id="av-rerender-n"></strong> — o vídeo ainda mostra a versão antiga.</span>
+      <button id="av-rerender-btn" class="btn-principal" onclick="rerenderizar()">Renderizar de novo</button>
+    </div>
 
     <div id="resultado" class="resultado" hidden></div>
   </section>
@@ -220,10 +318,21 @@
   <section id="tela-biblioteca" class="tela" hidden>
     <h1>Meus vídeos</h1>
     <p class="sub">Tudo que já foi gerado nesta máquina.</p>
+    <div class="acao" style="margin-bottom:1rem;flex-wrap:wrap;">
+      <button type="button" class="btn" id="fila-transcrever">Transcrever fila (m04)</button>
+      <button type="button" class="btn" id="fila-gerar">Gerar em fila</button>
+      <button type="button" class="btn" id="fila-juntar">Juntar finais</button>
+      <select id="fila-formato" class="campo" style="width:auto;margin-top:0;min-width:110px;">
+        <option value="16x9">16x9</option>
+        <option value="9x16">9x16</option>
+        <option value="1x1">1x1</option>
+      </select>
+      <span id="fila-erro" class="erro"></span>
+    </div>
     <div id="lista" class="lista"></div>
   </section>
 </main>
 
-<script src="/static/app.js"></script>
+<script src="/static/app.js?v=20261004-mp3-download"></script>
 </body>
 </html>

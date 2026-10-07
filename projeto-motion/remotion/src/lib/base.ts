@@ -32,6 +32,8 @@ export const baseSchema = z.object({
   entradaFrames: z.number().int().default(15),
   saidaFrames: z.number().int().default(10),
   spring: springSchema.default({ damping: 200, stiffness: 100, mass: 1 }),
+  animacaoEntrada: z.enum(["padrao", "de_baixo", "de_cima"]).default("padrao"),
+  animacaoSaida: z.enum(["padrao", "para_cima", "para_baixo"]).default("padrao"),
   safeArea: safeAreaSchema,
 });
 

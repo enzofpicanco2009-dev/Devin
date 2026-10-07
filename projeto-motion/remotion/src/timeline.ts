@@ -1,10 +1,44 @@
 import { z } from "zod";
 
+type FundoOverride = {
+  src: string;
+  tipo: "imagem" | "video";
+  brilho: number;
+  contraste: number;
+  saturacao: number;
+  desfoque_px: number;
+  opacidade: number;
+  escurecer: number;
+  zoom: number;
+  fit_mode: "cover" | "contain" | "fill" | "fit";
+  posicao_x: number;
+  posicao_y: number;
+  blend_mode: "normal" | "multiply" | "screen" | "overlay";
+  camadas: FundoOverride[];
+};
+
 export const palavraTempoSchema = z.object({
   w: z.string(),
   s: z.number().min(0),
   e: z.number().min(0),
 });
+
+export const fundoOverrideSchema: z.ZodType<FundoOverride> = z.lazy(() => z.object({
+  src: z.string(),
+  tipo: z.enum(["imagem", "video"]).default("imagem"),
+  brilho: z.number().min(0.2).max(2.5).default(1),
+  contraste: z.number().min(0.2).max(2.5).default(1),
+  saturacao: z.number().min(0).max(3).default(1),
+  desfoque_px: z.number().min(0).max(20).default(0),
+  opacidade: z.number().min(0).max(1).default(1),
+  escurecer: z.number().min(0).max(0.95).default(0),
+  zoom: z.number().min(0.1).max(3).default(1),
+  fit_mode: z.enum(["cover", "contain", "fill", "fit"]).default("cover"),
+  posicao_x: z.number().min(0).max(1).default(0.5),
+  posicao_y: z.number().min(0).max(1).default(0.5),
+  blend_mode: z.enum(["normal", "multiply", "screen", "overlay"]).default("normal"),
+  camadas: z.array(fundoOverrideSchema).default([]),
+}));
 
 export const cenaRenderSchema = z.object({
   id: z.string(),
@@ -13,6 +47,7 @@ export const cenaRenderSchema = z.object({
   render_end_s: z.number().positive(),
   decisao: z.object({ template: z.string() }),
   props_finais: z.record(z.string(), z.unknown()),
+  fundo_override: fundoOverrideSchema.optional(),
   palavras: z.array(palavraTempoSchema).default([]),
 });
 

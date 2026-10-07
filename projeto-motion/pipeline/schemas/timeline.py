@@ -36,6 +36,23 @@ class RenderInfo(BaseModel):
     cache_hit: bool = False
 
 
+class FundoOverride(BaseModel):
+    midia: str
+    tipo: Literal["imagem", "video"] = "imagem"
+    brilho: float = 1.0
+    contraste: float = 1.0
+    saturacao: float = 1.0
+    desfoque_px: float = 0.0
+    opacidade: float = 1.0
+    escurecer: float = 0.0
+    zoom: float = 1.0
+    fit_mode: Literal["cover", "contain", "fill", "fit"] = "cover"
+    posicao_x: float = 0.5
+    posicao_y: float = 0.5
+    blend_mode: Literal["normal", "multiply", "screen", "overlay"] = "normal"
+    camadas: list["FundoOverride"] = Field(default_factory=list)
+
+
 class Cena(BaseModel):
     id: str
     indice: int
@@ -55,6 +72,7 @@ class Cena(BaseModel):
     props_finais: Optional[dict[str, Any]] = None
     revisao: Revisao = Field(default_factory=Revisao)
     render: RenderInfo = Field(default_factory=RenderInfo)
+    fundo_override: Optional[FundoOverride] = None
 
     @property
     def duracao_fala_s(self) -> float:

@@ -22,7 +22,8 @@ class Entrada(BaseModel):
 class RenderConfig(BaseModel):
     codec: str = "h264"
     crf: int = 18
-    concorrencia: int = 4
+    concorrencia: int = 2
+    x264_preset: str = "superfast"
     cache: bool = True
 
 
@@ -41,6 +42,7 @@ class DecisaoConfig(BaseModel):
     temperatura: float = 0.3
     template_fixo: Optional[str] = "TituloImpacto"
     ritmo_edicao: Literal["rapido", "medio", "lento"] = "medio"  # influencia duração dinâmica das cenas
+    instrucoes_prompt: str = ""
 
 
 class Projeto(BaseModel):

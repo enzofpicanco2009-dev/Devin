@@ -40,6 +40,8 @@ export const Citacao: React.FC<Props> = (p) => {
   const esc = useEscala();
   const ent = useJanela(CONFIG.janelaEntrada[0], CONFIG.janelaEntrada[1], { maxS: CONFIG.entradaMaxS });
   const aut = useJanela(CONFIG.janelaAutor[0], CONFIG.janelaAutor[1], { maxS: CONFIG.entradaMaxS });
+  const deBaixo = p.animacaoEntrada === "de_baixo";
+  const deCima = p.animacaoEntrada === "de_cima";
   const layout = ajustarTexto(p.texto, {
     tamanhoMax: p.tamanhoFonte,
     tamanhoMin: CONFIG.tamanhoMin,
@@ -55,7 +57,11 @@ export const Citacao: React.FC<Props> = (p) => {
           gap: 44 * esc,
           maxWidth: 1500 * esc,
           opacity: ent,
-          transform: `translateY(${(1 - ent) * CONFIG.distanciaSubidaPx * esc}px)`,
+          transform: deBaixo
+            ? `translateY(${(1 - ent) * CONFIG.distanciaSubidaPx * 5.2 * esc}px)`
+            : deCima
+              ? `translateY(${(1 - ent) * CONFIG.distanciaSubidaPx * -5.2 * esc}px)`
+              : `scale(${0.96 + 0.04 * ent})`,
         }}
       >
         <div

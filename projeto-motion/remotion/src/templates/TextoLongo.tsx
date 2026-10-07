@@ -51,6 +51,12 @@ export const TextoLongo: React.FC<TextoLongoProps> = ({
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
   const esc = useEscala();
+  const progressoEntrada = interpolate(frame, [0, Math.max(1, fps * 0.5)], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const deBaixo = base.animacaoEntrada === "de_baixo";
+  const deCima = base.animacaoEntrada === "de_cima";
 
   const totalPalavras = texto.split(" ").filter(Boolean).length;
   const framesParaRevelarTudo = Math.max(1, durationInFrames * 0.7);
@@ -75,6 +81,11 @@ export const TextoLongo: React.FC<TextoLongoProps> = ({
           color: base.corTexto,
           textAlign: "center",
           maxWidth: "90%",
+          transform: deBaixo
+            ? `translateY(${(1 - progressoEntrada) * 128 * esc}px)`
+            : deCima
+              ? `translateY(${(1 - progressoEntrada) * -128 * esc}px)`
+              : `scale(${0.97 + 0.03 * progressoEntrada})`,
         }}
       >
         {partes.map((parte, i) => {
@@ -93,7 +104,7 @@ export const TextoLongo: React.FC<TextoLongoProps> = ({
               <span
                 key={`${i}-${j}`}
                 style={{
-                  opacity,
+                  opacity: opacity * progressoEntrada,
                   color: parte.destaque ? base.corDestaque : base.corTexto,
                   fontWeight: parte.destaque ? 700 : 500,
                 }}

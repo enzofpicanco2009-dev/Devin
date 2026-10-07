@@ -21,6 +21,8 @@ import * as Timeline from "./Timeline";
 import * as Planilha from "./Planilha";
 import * as TextoLongo from "./TextoLongo";
 import * as LegendaSincronizada from "./LegendaSincronizada";
+import * as MapaMental from "./MapaMental";
+import * as MapaMentalCartoes from "./MapaMentalCartoes";
 
 export type TemplateEntry = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -109,6 +111,16 @@ export const registry = {
     Component: Planilha.Planilha,
     schema: Planilha.planilhaSchema,
     defaultProps: Planilha.defaultProps,
+  },
+  MapaMental: {
+    Component: MapaMental.MapaMental,
+    schema: MapaMental.schema,
+    defaultProps: MapaMental.defaultProps,
+  },
+  MapaMentalCartoes: {
+    Component: MapaMentalCartoes.MapaMentalCartoes,
+    schema: MapaMentalCartoes.schema,
+    defaultProps: MapaMentalCartoes.defaultProps,
   },
   LegendaSincronizada: {
     Component: LegendaSincronizada.LegendaSincronizada,

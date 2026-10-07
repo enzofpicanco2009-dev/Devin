@@ -15,7 +15,7 @@ import json
 from . import llm, roteiro, roteiro_externo
 from .comum import CATALOGO, Caminhos, carregar_projeto, carregar_timeline, salvar_timeline
 from .imagens import listar_imagens
-from .schemas.timeline import Cena, Decisao, Timeline
+from .schemas.timeline import Cena, Decisao, FundoOverride, Timeline
 
 ETAPA = "m09"
 TEMPLATE_PREENCHIMENTO = "TituloImpacto"
@@ -59,6 +59,10 @@ def _resumo_tela(r: roteiro.CenaRoteiro) -> str:
         return f"[imagem {d['imagem']}] {d.get('texto', '')}"
     if r.template == "MidiaCheia":
         return f"[mídia {d['midia']} em tela cheia]"
+    if r.template in ("MapaMental", "MapaMentalCartoes"):
+        itens = d.get("itens", []) if isinstance(d.get("itens"), list) else []
+        prev = "; ".join(f"{x.get('id', '')} {x.get('texto', '')}" for x in itens[:3] if isinstance(x, dict))
+        return f"[mapa mental] {prev}".strip()
     return str(d.get("texto", ""))
 
 
@@ -120,9 +124,11 @@ def _reconstruir(t: Timeline, rot: list[roteiro.CenaRoteiro], imagens: list[dict
             rr = roteiro.decidir_regra(cena, imagens, ant)
             cena.decisao = Decisao(template=rr.template, props_semanticas=rr.dados, origem="regra",
                                    justificativa=rr.justificativa or "trecho longo dividido", confianca=0.6)
+            cena.fundo_override = None
         else:
             cena.decisao = Decisao(template=r.template, props_semanticas=r.dados, origem=r.origem,
                                    justificativa=r.justificativa, confianca=0.8)
+            cena.fundo_override = FundoOverride.model_validate(r.fundo) if r.fundo else None
         cenas.append(cena)
     return cenas
 
@@ -172,8 +178,21 @@ def executar(projeto_id: str, force: bool = False) -> None:
     imagens = listar_imagens(c)
     canal_desc = ""
     if t.config_resolvida and t.config_resolvida.canal:
-        dna = t.config_resolvida.canal.dna
-        canal_desc = f"{t.config_resolvida.canal.nome}; tom {dna.tom}; público: {dna.publico}"
+        canal = t.config_resolvida.canal
+        dna = canal.dna
+        partes = [
+            canal.nome,
+            f"tom: {dna.tom}",
+        ]
+        if dna.publico:
+            partes.append(f"público: {dna.publico}")
+        if dna.cta_padrao:
+            partes.append(f"cta: {dna.cta_padrao}")
+        if dna.elementos_caracteristicos:
+            partes.append("elementos característicos: " + ", ".join(dna.elementos_caracteristicos[:4]))
+        if dna.elementos_proibidos:
+            partes.append("evitar: " + ", ".join(dna.elementos_proibidos[:4]))
+        canal_desc = "; ".join(partes)
 
     modo = "regras"
     estado = {"modo": modo, "status": "pensando", "cenas": []}
@@ -181,9 +200,17 @@ def executar(projeto_id: str, force: bool = False) -> None:
 
     rot: list[roteiro.CenaRoteiro] | None = None
     if projeto.decisao.provedor == "externo":
-        rot = roteiro_externo.carregar(c)
-        modo = "externo"
-        print(f"[{ETAPA}] usando roteiro colado de outra IA ({len(rot)} cenas)")
+        try:
+            rot = roteiro_externo.carregar(c)
+            modo = "externo"
+            print(f"[{ETAPA}] usando roteiro colado de outra IA ({len(rot)} cenas)")
+        except roteiro_externo.RoteiroExternoInvalido as e:
+            rot = None
+            modo = "regras"
+            aviso = f"m09: modo externo sem roteiro colado ({e}); usando regras automaticamente"
+            if aviso not in t.validacao.avisos:
+                t.validacao.avisos.append(aviso)
+            print(f"[{ETAPA}] {aviso}")
     elif projeto.decisao.provedor == "ollama":
         modelo = llm.escolher_modelo(projeto.decisao.modelo) if llm.disponivel() else None
         if not modelo:
@@ -192,7 +219,14 @@ def executar(projeto_id: str, force: bool = False) -> None:
             estado.update(modo="ia", modelo=modelo)
             _ao_vivo(c, estado)
             try:
-                rot = roteiro.roteiro_llm(t.cenas, imagens, canal_desc, modelo, projeto.decisao.temperatura)
+                rot = roteiro.roteiro_llm(
+                    t.cenas,
+                    imagens,
+                    canal_desc,
+                    modelo,
+                    projeto.decisao.temperatura,
+                    getattr(projeto.decisao, "instrucoes_prompt", "") or "",
+                )
                 if len(rot) < 1:
                     raise ValueError("nenhuma cena válida")
                 modo = "ia"
@@ -238,7 +272,8 @@ def executar(projeto_id: str, force: bool = False) -> None:
         estado["cenas"].append({"id": cena.id, "inicio": cena.render_start_s, "fim": cena.render_end_s,
                                 "template": cena.decisao.template, "tela": tela,
                                 "dados": cena.decisao.props_semanticas,
-                                "por_que": cena.decisao.justificativa, "fala": cena.texto})
+                                "por_que": cena.decisao.justificativa, "fala": cena.texto,
+                                "fundo_override": cena.fundo_override.model_dump() if cena.fundo_override else None})
         print(f"[{ETAPA}] {cena.id} {cena.render_start_s:5.1f}-{cena.render_end_s:5.1f}s "
               f"{cena.decisao.template:<20} {tela[:70]}")
     _ao_vivo(c, estado)

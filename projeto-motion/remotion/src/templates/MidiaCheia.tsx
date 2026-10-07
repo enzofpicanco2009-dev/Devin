@@ -1,8 +1,9 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Easing,
   Img,
-  Video,
+  OffthreadVideo,
   interpolate,
   staticFile,
   useCurrentFrame,
@@ -19,6 +20,7 @@ import { baseSchema } from "../lib/base";
 export const schema = baseSchema.extend({
   src: z.string(),
   tipo: z.enum(["imagem", "video"]).default("imagem"),
+  ajusteImagem: z.enum(["cover", "contain"]).default("contain"),
   zoom: z.enum(["in", "out", "nenhum"]).default("in"),
   zoomMax: z.number().min(1).max(1.3).default(1.08),
 });
@@ -33,17 +35,43 @@ const resolver = (src: string) =>
 
 export const MidiaCheia: React.FC<Props> = (p) => {
   const frame = useCurrentFrame();
-  const { durationInFrames } = useVideoConfig();
+  const { durationInFrames, width, height } = useVideoConfig();
+  const escalaTela = Math.min(width, height) / 1080;
+  const saidaFramesRapida = Math.max(1, Math.round(p.saidaFrames * 0.45));
+  const inicioSaida = Math.max(0, durationInFrames - saidaFramesRapida);
+  const isContain = p.tipo === "imagem" && p.ajusteImagem === "contain";
+  const ampEntrada = (isContain ? 42 : 180) * escalaTela;
+  const ampSaida = (isContain ? 56 : 220) * escalaTela;
   const opIn = interpolate(frame, [0, p.entradaFrames], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
+    easing: Easing.out(Easing.cubic),
   });
   const opOut = interpolate(
     frame,
-    [durationInFrames - p.saidaFrames, durationInFrames],
+    [inicioSaida, durationInFrames],
     [1, 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: Easing.in(Easing.cubic),
+    },
   );
+  const progEntrada = interpolate(frame, [0, p.entradaFrames], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.out(Easing.cubic),
+  });
+  const progSaida = interpolate(frame, [inicioSaida, durationInFrames], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.in(Easing.cubic),
+  });
+  let deslocamentoY = 0;
+  if (p.animacaoEntrada === "de_baixo") deslocamentoY += (1 - progEntrada) * ampEntrada;
+  if (p.animacaoEntrada === "de_cima") deslocamentoY -= (1 - progEntrada) * ampEntrada;
+  if (p.animacaoSaida === "para_cima") deslocamentoY -= progSaida * ampSaida;
+  if (p.animacaoSaida === "para_baixo") deslocamentoY += progSaida * ampSaida;
   const progresso = interpolate(frame, [0, durationInFrames], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
@@ -57,20 +85,25 @@ export const MidiaCheia: React.FC<Props> = (p) => {
   const estilo: React.CSSProperties = {
     width: "100%",
     height: "100%",
-    objectFit: "cover",
+    objectFit: p.tipo === "imagem" ? p.ajusteImagem : "cover",
   };
-  const estiloImagem: React.CSSProperties = {
+  const estiloMidia: React.CSSProperties = {
     ...estilo,
-    transform: `scale(${escala})`,
+    transform: `translateY(${deslocamentoY}px) scale(${escala})`,
     transformOrigin: "center center",
   };
   return (
-    <AbsoluteFill style={{ backgroundColor: p.corFundo }}>
-      <AbsoluteFill style={{ opacity: Math.min(opIn, opOut), overflow: "hidden" }}>
+    <AbsoluteFill style={{ backgroundColor: "#000" }}>
+      <AbsoluteFill
+        style={{
+          opacity: Math.min(opIn, opOut),
+          overflow: "hidden",
+        }}
+      >
         {p.tipo === "video" ? (
-          <Video src={resolver(p.src)} muted loop style={estilo} />
+          <OffthreadVideo src={resolver(p.src)} muted style={estiloMidia} />
         ) : (
-          <Img src={resolver(p.src)} style={estiloImagem} />
+          <Img src={resolver(p.src)} style={estiloMidia} />
         )}
       </AbsoluteFill>
     </AbsoluteFill>

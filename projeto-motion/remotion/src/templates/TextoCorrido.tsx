@@ -40,6 +40,8 @@ const normalizar = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "")
 export const TextoCorrido: React.FC<Props> = (p) => {
   const esc = useEscala();
   const ent = useJanela(CONFIG.janelaEntrada[0], CONFIG.janelaEntrada[1], { maxS: 0.9 });
+  const deBaixo = p.animacaoEntrada === "de_baixo";
+  const deCima = p.animacaoEntrada === "de_cima";
   const layout = ajustarTexto(p.texto, {
     tamanhoMax: p.tamanhoFonte,
     tamanhoMin: CONFIG.tamanhoMin,
@@ -56,7 +58,11 @@ export const TextoCorrido: React.FC<Props> = (p) => {
           gap: 40 * esc,
           maxWidth: 1500 * esc,
           opacity: ent,
-          transform: `translateY(${(1 - ent) * CONFIG.distanciaSubidaPx * esc}px)`,
+          transform: deBaixo
+            ? `translateY(${(1 - ent) * CONFIG.distanciaSubidaPx * 5.0 * esc}px)`
+            : deCima
+              ? `translateY(${(1 - ent) * CONFIG.distanciaSubidaPx * -5.0 * esc}px)`
+              : `scale(${0.96 + 0.04 * ent})`,
         }}
       >
         <div

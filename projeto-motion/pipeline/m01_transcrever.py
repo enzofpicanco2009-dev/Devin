@@ -1,6 +1,7 @@
 """M01 — Transcrição local com faster-whisper (texto + timestamps por segmento e palavra)."""
 from __future__ import annotations
 
+import gc
 import time
 
 from .comum import (
@@ -147,6 +148,22 @@ def _segmento_sintetico_por_texto(texto: str, duracao_s: float) -> list[dict]:
     }]
 
 
+def _palavras_sinteticas(texto: str, inicio_s: float, fim_s: float) -> list[dict]:
+    palavras = [p for p in str(texto or "").split() if p]
+    if not palavras:
+        return []
+    dur = max(0.06, float(fim_s) - float(inicio_s))
+    dt = max(0.04, dur / max(1, len(palavras)))
+    t0 = float(inicio_s)
+    out: list[dict] = []
+    for p in palavras:
+        t1 = min(float(fim_s), t0 + dt)
+        out.append({"word": p, "start": round(t0, 3), "end": round(t1, 3), "probability": 1.0})
+        t0 = t1
+    out[-1]["end"] = round(float(fim_s), 3)
+    return out
+
+
 def executar(projeto_id: str, force: bool = False) -> None:
     from faster_whisper import WhisperModel
 
@@ -174,39 +191,104 @@ def executar(projeto_id: str, force: bool = False) -> None:
     modelos = _modelos_tentativa(cfg.modelo)
     modelo_usado = cfg.modelo
     ultimo_erro = None
-    segmentos_iter = None
+    segmentos_brutos = None
     info = None
     prompt = " ".join((texto_roteiro or "").split()[:150]) if texto_roteiro else None
 
+    perfis_tentativa = [
+        {
+            "compute_type": cfg.compute_type,
+            "beam_size": max(1, int(cfg.beam_size)),
+            "best_of": 1,
+            "word_timestamps": bool(cfg.word_timestamps),
+        },
+        {
+            "compute_type": "int8",
+            "beam_size": 1,
+            "best_of": 1,
+            "word_timestamps": bool(cfg.word_timestamps),
+        },
+        {
+            "compute_type": "int8",
+            "beam_size": 1,
+            "best_of": 1,
+            "word_timestamps": False,
+        },
+    ]
+
     for m in modelos:
-        try:
-            print(f"[{ETAPA}] carregando modelo '{m}' ({cfg.device}, {cfg.compute_type})…")
-            modelo = WhisperModel(m, device=cfg.device, compute_type=cfg.compute_type)
-            modelo_usado = m
-            if m != cfg.modelo:
-                print(f"[{ETAPA}] memória insuficiente para '{cfg.modelo}', usando fallback '{m}'")
+        for pi, perfil in enumerate(perfis_tentativa, start=1):
+            try:
+                compute_type = perfil["compute_type"]
+                beam_size = perfil["beam_size"]
+                best_of = perfil["best_of"]
+                word_timestamps = perfil["word_timestamps"]
+                print(
+                    f"[{ETAPA}] carregando modelo '{m}' ({cfg.device}, {compute_type}) "
+                    f"[tentativa {pi}/{len(perfis_tentativa)}; beam={beam_size}, best_of={best_of}, "
+                    f"word_ts={'on' if word_timestamps else 'off'}]…"
+                )
+                modelo = WhisperModel(m, device=cfg.device, compute_type=compute_type)
+                modelo_usado = m
+                if m != cfg.modelo:
+                    print(f"[{ETAPA}] memória insuficiente para '{cfg.modelo}', usando fallback '{m}'")
 
-            inicio = time.time()
-            segmentos_iter, info = modelo.transcribe(
-                str(c.audio_wav),
-                language=projeto.entrada.idioma,
-                beam_size=cfg.beam_size,
-                word_timestamps=cfg.word_timestamps,
-                vad_filter=cfg.vad,
-                vad_parameters={"min_silence_duration_ms": 300},
-                initial_prompt=prompt,
-            )
-            break
-        except RuntimeError as e:
-            ultimo_erro = e
-            if _erro_parece_memoria(str(e)):
-                print(f"[{ETAPA}] sem memória com '{m}', tentando modelo menor…")
+                inicio = time.time()
+                segmentos_iter, info = modelo.transcribe(
+                    str(c.audio_wav),
+                    language=projeto.entrada.idioma,
+                    beam_size=beam_size,
+                    best_of=best_of,
+                    word_timestamps=word_timestamps,
+                    vad_filter=cfg.vad,
+                    vad_parameters={"min_silence_duration_ms": 300},
+                    initial_prompt=prompt,
+                )
+                # Importante: o decoder do faster-whisper executa ao iterar.
+                # Consumimos aqui para capturar falhas de memória no fluxo de fallback.
+                segmentos_tentativa = []
+                for s in segmentos_iter:
+                    texto = s.text.strip()
+                    if not texto:
+                        continue
+                    palavras = [
+                        {
+                            "word": w.word.strip(),
+                            "start": round(w.start, 3),
+                            "end": round(w.end, 3),
+                            "probability": round(w.probability, 3),
+                        }
+                        for w in (s.words or [])
+                    ]
+                    if not palavras:
+                        palavras = _palavras_sinteticas(texto, round(s.start, 3), round(s.end, 3))
+                    segmentos_tentativa.append({
+                        "start": round(s.start, 3),
+                        "end": round(s.end, 3),
+                        "text": texto,
+                        "words": palavras,
+                    })
+
+                segmentos_brutos = segmentos_tentativa
+                break
+            except RuntimeError as e:
+                ultimo_erro = e
+                if _erro_parece_memoria(str(e)):
+                    print(f"[{ETAPA}] sem memória com '{m}' (perfil {pi}), tentando fallback…")
+                    continue
+                # Erros de runtime inesperados também tentam fallback.
+                print(f"[{ETAPA}] falha no modelo '{m}' (perfil {pi}) ({e}); tentando fallback…")
                 continue
-            # Erros de runtime inesperados também tentam fallback de modelo.
-            print(f"[{ETAPA}] falha no modelo '{m}' ({e}); tentando modelo menor…")
-            continue
+            finally:
+                try:
+                    del modelo
+                except Exception:
+                    pass
+                gc.collect()
+        if segmentos_brutos is not None and info is not None:
+            break
 
-    if segmentos_iter is None or info is None:
+    if segmentos_brutos is None or info is None:
         if texto_roteiro:
             segmentos = _segmento_sintetico_por_texto(texto_roteiro, audio.duracao_s)
             resultado = {
@@ -228,20 +310,6 @@ def executar(projeto_id: str, force: bool = False) -> None:
             f"[{ETAPA}] falha de memória durante a transcrição e sem roteiro de fallback. "
             f"Tente modelo 'tiny' ou crie entrada/roteiro.txt"
         ) from ultimo_erro
-
-    segmentos_brutos = []
-    for i, s in enumerate(segmentos_iter):
-        texto = s.text.strip()
-        if not texto:
-            continue
-        palavras = [
-            {"word": w.word.strip(), "start": round(w.start, 3), "end": round(w.end, 3),
-             "probability": round(w.probability, 3)}
-            for w in (s.words or [])
-        ]
-        segmentos_brutos.append({
-            "start": round(s.start, 3), "end": round(s.end, 3), "text": texto, "words": palavras,
-        })
     
     # quebrar por frases para segmentação mais fina
     segmentos = []

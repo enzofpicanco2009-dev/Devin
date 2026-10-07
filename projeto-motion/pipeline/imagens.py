@@ -11,9 +11,10 @@ import json
 import re
 import unicodedata
 import shutil
+import subprocess
 from pathlib import Path
 
-from .comum import REMOTION, Caminhos
+from .comum import REMOTION, Caminhos, executavel
 
 EXT_IMAGEM = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"}
 EXT_VIDEO = {".mp4", ".webm", ".mov"}
@@ -123,6 +124,25 @@ def remover_imagem(c: Caminhos, iid: str) -> bool:
     return True
 
 
+def atualizar_imagem(c: Caminhos, iid: str, nome: str | None = None, descricao: str | None = None,
+                    tags: list[str] | None = None) -> dict:
+    imagens = listar_imagens(c)
+    alvo = next((i for i in imagens if i.get("id") == iid), None)
+    if not alvo:
+        raise KeyError(iid)
+    if nome is not None:
+        nome_limpo = str(nome).strip()
+        if not nome_limpo:
+            raise ValueError("nome não pode ser vazio")
+        alvo["nome"] = nome_limpo
+    if descricao is not None:
+        alvo["descricao"] = str(descricao).strip()
+    if tags is not None:
+        alvo["tags"] = sorted({str(t).strip().lower() for t in tags if str(t).strip()})
+    salvar_catalogo(c, imagens)
+    return alvo
+
+
 def publicar_imagens(c: Caminhos) -> dict[str, str]:
     """Copia as imagens para `remotion/public/projetos/<id>/`; devolve id -> caminho relativo a public/."""
     _limpar_symlinks_publico_projetos()
@@ -137,4 +157,53 @@ def publicar_imagens(c: Caminhos) -> dict[str, str]:
         if not dst.exists() or dst.stat().st_mtime < src.stat().st_mtime:
             shutil.copy2(src, dst)
         mapa[i["id"]] = f"projetos/{c.raiz.name}/{i['arquivo']}"
+    return mapa
+
+
+def publicar_proxies_video(c: Caminhos) -> dict[str, str]:
+    """Gera proxies leves (H.264, yuv420p) para vídeos usados como fundo.
+
+    Os proxies ficam em `remotion/public/projetos/<id>/__proxy/` e são
+    atualizados só quando o vídeo original muda.
+    """
+    destino = PUBLIC / "projetos" / c.raiz.name / "__proxy"
+    destino.mkdir(parents=True, exist_ok=True)
+    mapa: dict[str, str] = {}
+    ffmpeg = executavel("ffmpeg")
+
+    for i in listar_imagens(c):
+        if (i.get("tipo") or tipo_de(i.get("arquivo", ""))) != "video":
+            continue
+        src = pasta_imagens(c) / i["arquivo"]
+        dst_nome = f"{i['id']}_bg.mp4"
+        dst = destino / dst_nome
+        precisa_gerar = (not dst.exists()) or (dst.stat().st_mtime < src.stat().st_mtime)
+        if precisa_gerar:
+            cmd = [
+                ffmpeg,
+                "-y",
+                "-loglevel",
+                "error",
+                "-i",
+                str(src),
+                "-an",
+                "-vf",
+                "fps=30,scale='if(gt(iw,1280),1280,iw)':-2:flags=lanczos,format=yuv420p",
+                "-c:v",
+                "libx264",
+                "-preset",
+                "veryfast",
+                "-crf",
+                "24",
+                "-pix_fmt",
+                "yuv420p",
+                "-movflags",
+                "+faststart",
+                str(dst),
+            ]
+            r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
+            if r.returncode != 0:
+                print(f"[imagens] proxy de vídeo falhou para {src.name}: {r.stderr[-400:]}")
+                continue
+        mapa[i["id"]] = f"projetos/{c.raiz.name}/__proxy/{dst_nome}"
     return mapa

@@ -44,7 +44,8 @@ def criar_projeto(
     roteiro_externo: bool = False,
     idioma: str | None = "pt",
     ritmo_edicao: str = "medio",
-    legendas_sincronizadas: bool = True,
+    legendas_sincronizadas: bool = False,
+    instrucoes_prompt: str = "",
 ) -> Path:
     if not ID_PROJETO_RE.match(projeto_id):
         raise ValueError(f"ID de projeto inválido: {projeto_id!r}")
@@ -82,7 +83,8 @@ def criar_projeto(
         "transcricao": {"modelo": modelo},
         "overrides": overrides,
         "decisao": {"provedor": "externo" if roteiro_externo else ("ollama" if usar_ia else "nenhum"),
-                    "template_fixo": None, "ritmo_edicao": ritmo_edicao},
+                    "template_fixo": None, "ritmo_edicao": ritmo_edicao,
+                    "instrucoes_prompt": (instrucoes_prompt or "").strip()},
     }
     (raiz / "projeto.json").write_text(json.dumps(projeto, ensure_ascii=False, indent=2), encoding="utf-8")
     return raiz

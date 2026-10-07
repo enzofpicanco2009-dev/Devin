@@ -21,6 +21,8 @@ export const Pergunta: React.FC<Props> = (p) => {
   const { fps } = useVideoConfig();
   const marca = useEntrada(0, { damping: 12, stiffness: 120, mass: 0.8 }, 30);
   const txt = useEntrada(Math.round(fps * 0.5), p.spring, 22);
+  const deBaixo = p.animacaoEntrada === "de_baixo";
+  const deCima = p.animacaoEntrada === "de_cima";
   const pulso = 1 + 0.04 * Math.sin((frame / fps) * Math.PI * 2);
   const layout = ajustarTexto(p.texto.replace(/\?+$/, ""), {
     tamanhoMax: p.tamanhoFonte,
@@ -36,7 +38,12 @@ export const Pergunta: React.FC<Props> = (p) => {
           fontSize: 300 * esc,
           lineHeight: 0.9,
           color: p.corDestaque,
-          transform: `scale(${marca * pulso}) rotate(${(1 - marca) * -20}deg)`,
+          transform: deBaixo
+            ? `translateY(${(1 - marca) * 140 * esc}px) scale(${0.9 + 0.1 * marca * pulso})`
+            : deCima
+              ? `translateY(${(1 - marca) * -140 * esc}px) scale(${0.9 + 0.1 * marca * pulso})`
+              : `scale(${marca * pulso}) rotate(${(1 - marca) * -20}deg)`,
+          opacity: marca,
           marginBottom: 30 * esc,
         }}
       >
@@ -49,7 +56,11 @@ export const Pergunta: React.FC<Props> = (p) => {
           lineHeight: 1.15,
           textAlign: "center",
           opacity: txt,
-          transform: `translateY(${(1 - txt) * 30 * esc}px)`,
+          transform: deBaixo
+            ? `translateY(${(1 - txt) * 120 * esc}px)`
+            : deCima
+              ? `translateY(${(1 - txt) * -120 * esc}px)`
+              : `translateY(0px)`,
         }}
       >
         {layout.linhas.map((l, i) => (

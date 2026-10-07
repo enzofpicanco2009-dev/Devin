@@ -10,7 +10,7 @@ from .schemas.config import Ritmo
 from .schemas.timeline import Cena, Palavra
 
 ETAPA = "m04"
-BLOCO_EXTERNO_S = 3.0  # tamanho dos trechos minutados quando outra IA decide o agrupamento
+BLOCO_EXTERNO_S = 1.5  # tamanho dos trechos minutados quando outra IA decide o agrupamento
 
 
 def adaptar_ritmo_por_edicao(r: Ritmo, ritmo_edicao: str) -> Ritmo:

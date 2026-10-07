@@ -93,7 +93,7 @@
     },
     {
       "id": "PalavraPorPalavra",
-      "status": "planejado",
+      "status": "implementado",
       "categoria": "texto",
       "descricao_para_llm": "Cada palavra aparece no instante em que é falada (legenda kinetic).",
       "duracao_s": [
@@ -377,7 +377,7 @@
     },
     {
       "id": "GraficoPizza",
-      "status": "planejado",
+      "status": "implementado",
       "categoria": "grafico",
       "descricao_para_llm": "Fatias abrem em sequência com legenda. Partes de um todo.",
       "duracao_s": [
@@ -392,8 +392,9 @@
       ],
       "props": {
         "titulo": "string?",
-        "fatias": "[{rotulo, percentual}](2-6)",
-        "estilo": "pizza|rosca"
+        "fatias": "[{rotulo, valor}](2-6)",
+        "estilo": "donut|pizza",
+        "destacar_indice": "int?"
       }
     },
     {
@@ -1021,6 +1022,167 @@
         "itens": "[string(max 6 palavras)](2-5)",
         "icone_itens": "icone_semantico",
         "sincronizar_com_palavras": "boolean"
+      }
+    },
+    {
+      "id": "LegendaSincronizada",
+      "status": "implementado",
+      "categoria": "texto",
+      "descricao_para_llm": "A própria fala da cena, grande e centralizada, com cada palavra acendendo no ritmo da narração.",
+      "duracao_s": [
+        1,
+        12
+      ],
+      "tipos_conteudo": [
+        "afirmacao",
+        "exemplo",
+        "opiniao"
+      ],
+      "fases": [
+        "gancho",
+        "desenvolvimento",
+        "climax"
+      ],
+      "props": {
+        "texto": "string (vazio = palavras da narração)",
+        "palavras_destaque": "string[]"
+      }
+    },
+    {
+      "id": "TextoLongo",
+      "status": "implementado",
+      "categoria": "texto",
+      "descricao_para_llm": "Parágrafo explicativo com frases-chave marcadas em destaque.",
+      "duracao_s": [
+        5,
+        14
+      ],
+      "tipos_conteudo": [
+        "explicacao"
+      ],
+      "fases": [
+        "desenvolvimento"
+      ],
+      "props": {
+        "texto": "string",
+        "destaque_frases": "string[]"
+      }
+    },
+    {
+      "id": "Timeline",
+      "status": "implementado",
+      "categoria": "estrutura",
+      "descricao_para_llm": "Linha do tempo com 2 a 6 eventos (marcador + descrição).",
+      "duracao_s": [
+        5,
+        14
+      ],
+      "tipos_conteudo": [
+        "sequencia",
+        "historia"
+      ],
+      "fases": [
+        "desenvolvimento"
+      ],
+      "props": {
+        "titulo": "string",
+        "eventos": "{marcador,descricao}[]",
+        "orientacao": "horizontal|vertical"
+      }
+    },
+    {
+      "id": "MapaMental",
+      "status": "implementado",
+      "categoria": "estrutura",
+      "descricao_para_llm": "Mapa mental com caixa central e caixas conectadas por ramificações (1, 1.1, 1.1.1...).",
+      "duracao_s": [
+        4,
+        14
+      ],
+      "tipos_conteudo": [
+        "sequencia",
+        "definicao",
+        "lista"
+      ],
+      "fases": [
+        "desenvolvimento",
+        "conclusao"
+      ],
+      "props": {
+        "titulo": "string?",
+        "itens": "[{id:'1|1.1|1.1.1',texto:'string'}](2-16)",
+        "animacao_entrada": "padrao|de_baixo|de_cima",
+        "animacao_saida": "padrao|para_cima|para_baixo"
+      }
+    },
+    {
+      "id": "MapaMentalCartoes",
+      "status": "implementado",
+      "categoria": "estrutura",
+      "descricao_para_llm": "Mapa mental com tema central no topo e ramos em cartões abaixo, cada cartão com título e lista de itens (1, 1.1, 1.1.1...).",
+      "duracao_s": [
+        5,
+        15
+      ],
+      "tipos_conteudo": [
+        "sequencia",
+        "definicao",
+        "lista"
+      ],
+      "fases": [
+        "desenvolvimento",
+        "conclusao"
+      ],
+      "props": {
+        "titulo": "string?",
+        "itens": "[{id:'1|1.1|1.1.1',texto:'string'}](2-16)"
+      }
+    },
+    {
+      "id": "Planilha",
+      "status": "implementado",
+      "categoria": "dados",
+      "descricao_para_llm": "Tabela com 2 a 4 colunas e até 5 linhas, com coluna/linha em destaque.",
+      "duracao_s": [
+        5,
+        14
+      ],
+      "tipos_conteudo": [
+        "comparacao",
+        "lista_dados"
+      ],
+      "fases": [
+        "desenvolvimento"
+      ],
+      "props": {
+        "titulo": "string",
+        "colunas": "string[]",
+        "linhas": "string[][]",
+        "destacar_coluna": "int?",
+        "destacar_linha": "int?"
+      }
+    },
+    {
+      "id": "CTAFinal",
+      "status": "implementado",
+      "categoria": "estrutura",
+      "descricao_para_llm": "Cartão de chamada final com ação principal e subtexto.",
+      "duracao_s": [
+        2,
+        8
+      ],
+      "tipos_conteudo": [
+        "cta",
+        "conclusao"
+      ],
+      "fases": [
+        "cta",
+        "conclusao"
+      ],
+      "props": {
+        "texto_principal": "string",
+        "subtexto": "string?",
+        "estilo_botao": "solido|contorno"
       }
     },
     {

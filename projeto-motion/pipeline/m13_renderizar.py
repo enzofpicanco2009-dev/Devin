@@ -1,9 +1,12 @@
 """M13 — Renderiza a composição `Video` do Remotion com a timeline inteira (um único mp4 mudo)."""
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
+import tempfile
 import time
+from collections import deque
 from pathlib import Path
 
 from .comum import (REMOTION, Caminhos, carregar_projeto, carregar_timeline, executavel, ffprobe, salvar_json,
@@ -21,6 +24,36 @@ def _erro_memoria_render(saida: str) -> bool:
         "std::bad_alloc",
         "malloc of size",
         "error encoding a frame",
+    )
+    return any(p in s for p in pistas)
+
+
+def _erro_instabilidade_compositor(saida: str) -> bool:
+    s = saida.lower()
+    pistas = (
+        "compositor exited with code 3221226505",
+        "could not extract frame from compositor",
+        "make-streamer",
+        "memory allocation",
+        "could not load image with source blob:",
+        "protocol error (page.bringtofront)",
+        "target closed",
+        "session closed",
+        "browser crashed while rendering frame",
+        "timed out after 30000ms while setting up the headless browser",
+    )
+    return any(p in s for p in pistas)
+
+
+def _erro_stitch(saida: str) -> bool:
+    """Falhas transitórias na montagem/FFmpeg (temp some, fast-start, etc.) — recuperáveis com retry."""
+    s = saida.lower()
+    pistas = (
+        "remotion-stitch-temp-dir",
+        "fast-start-intermediate",
+        "error opening output",
+        "no such file or directory",
+        "stitch-frames-to-video",
     )
     return any(p in s for p in pistas)
 
@@ -51,6 +84,7 @@ def timeline_para_remotion(t, formato, audio_url: str | None = None, legendas_at
                 "render_start_s": c.render_start_s, "render_end_s": c.render_end_s,
                 "decisao": {"template": c.decisao.template},
                 "props_finais": c.props_finais,
+                "fundo_override": c.props_finais.get("fundo_override") if isinstance(c.props_finais, dict) else None,
                 "palavras": [{"w": p.w, "s": p.s, "e": p.e} for p in c.palavras],
             }
             for c in t.cenas
@@ -71,14 +105,6 @@ def _publicar_audio_remotion(c: Caminhos, projeto) -> str:
     return f"projetos/{c.raiz.name}/{destino.name}"
 
 
-def _resetar_publico_projetos() -> None:
-    """Limpa assets antigos de projetos para evitar symlinks legados no bundle do Remotion."""
-    raiz = REMOTION / "public" / "projetos"
-    if raiz.exists():
-        shutil.rmtree(raiz, ignore_errors=True)
-    raiz.mkdir(parents=True, exist_ok=True)
-
-
 def _fingerprint_remotion_src() -> str:
     """Hash simples do código-fonte do Remotion para invalidar cache de render ao mudar templates."""
     src = REMOTION / "src"
@@ -90,6 +116,85 @@ def _fingerprint_remotion_src() -> str:
             st = p.stat()
             itens.append(f"{p.relative_to(src)}:{st.st_mtime_ns}:{st.st_size}")
     return sha256_obj(itens)
+
+
+def _materializar_symlinks_publico() -> int:
+    """Substitui symlinks em remotion/public por cópias reais (compatibilidade Windows/OneDrive)."""
+    raiz = REMOTION / "public"
+    if not raiz.exists():
+        return 0
+
+    # Processa caminhos mais profundos primeiro para evitar conflitos de árvore.
+    alvos = sorted(raiz.rglob("*"), key=lambda p: len(p.parts), reverse=True)
+    corrigidos = 0
+    for p in alvos:
+        try:
+            eh_symlink = p.is_symlink()
+        except OSError:
+            continue
+        if not eh_symlink:
+            continue
+
+        try:
+            real = p.resolve(strict=True)
+        except FileNotFoundError:
+            p.unlink(missing_ok=True)
+            corrigidos += 1
+            continue
+
+        p.unlink(missing_ok=True)
+        if real.is_dir():
+            shutil.copytree(real, p, dirs_exist_ok=True)
+        else:
+            p.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(real, p)
+        corrigidos += 1
+
+    if corrigidos:
+        print(f"[{ETAPA}] symlinks convertidos em remotion/public: {corrigidos}")
+    return corrigidos
+
+
+def _preset_x264(valor: str | None) -> str:
+    permitidos = {
+        "ultrafast", "superfast", "veryfast", "faster", "fast", "medium", "slow", "slower", "veryslow",
+    }
+    v = str(valor or "superfast").strip().lower()
+    return v if v in permitidos else "superfast"
+
+
+def _concorrencia_ajustada(concorrencia_cfg: int, largura: int, altura: int) -> int:
+    cpus = os.cpu_count() or 4
+    # Evita saturar o desktop: deixa ao menos 2 threads livres para o sistema.
+    limite_cpu = max(1, cpus - 2)
+    # 1080p+ já pesa bastante; limite menor tende a evitar engasgos e swap.
+    limite_res = 2 if largura * altura >= 1920 * 1080 else 3
+    return max(1, min(int(concorrencia_cfg), limite_cpu, limite_res))
+
+
+def _rodar_stream(cmd: list[str], cwd: Path, env: dict | None = None) -> tuple[int, str]:
+    """Executa comando emitindo stdout em tempo real e retorna um resumo para diagnóstico."""
+    proc = subprocess.Popen(
+        cmd,
+        cwd=cwd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        bufsize=1,
+        env=env,
+    )
+    assert proc.stdout is not None
+
+    tail = deque(maxlen=2500)
+    for bruto in proc.stdout:
+        linha = bruto.rstrip()
+        if linha:
+            print(linha, flush=True)
+            tail.append(linha)
+    proc.wait()
+    return proc.returncode, "\n".join(tail)
 
 
 def executar(projeto_id: str, force: bool = False, formato_id: str | None = None) -> None:
@@ -106,7 +211,7 @@ def executar(projeto_id: str, force: bool = False, formato_id: str | None = None
     audio_src = c.entrada(projeto.entrada.audio)
     audio_rel = f"projetos/{c.raiz.name}/audio{audio_src.suffix.lower()}"
     video_cfg = (projeto.overrides or {}).get("video") if isinstance(projeto.overrides, dict) else {}
-    legendas_ativas = True if not isinstance(video_cfg, dict) else bool(video_cfg.get("legendas_ativas", True))
+    legendas_ativas = isinstance(video_cfg, dict) and bool(video_cfg.get("legendas_ativas", False))
     dados = timeline_para_remotion(t, formato, audio_rel, legendas_ativas=legendas_ativas)
     chave = sha256_obj({
         "timeline": dados,
@@ -120,9 +225,10 @@ def executar(projeto_id: str, force: bool = False, formato_id: str | None = None
         salvar_timeline(c, t)
         return
 
-    _resetar_publico_projetos()
+    # Publicação incremental: evita apagar/copiar tudo a cada render, reduzindo muito IO e travamentos.
     publicar_imagens(c)
     _publicar_audio_remotion(c, projeto)
+    _materializar_symlinks_publico()
     props_path = c.timeline_render(formato.id)
     salvar_json(props_path, dados)
 
@@ -130,29 +236,109 @@ def executar(projeto_id: str, force: bool = False, formato_id: str | None = None
         executavel("npx"), "remotion", "render", "Video", str(saida),
         "--props", str(props_path),
         "--codec", projeto.render.codec,
-        "--log", "warn",
+        "--log", "info",
         "--muted",
     ]
     print(f"[{ETAPA}] renderizando {len(t.cenas)} cenas, {t.audio.duracao_s:.1f}s @ {formato.fps}fps "
           f"{formato.largura}x{formato.altura} …")
     inicio = time.time()
+    conc = _concorrencia_ajustada(projeto.render.concorrencia, formato.largura, formato.altura)
+
+    # Diretório temporário local dedicado: evita que a montagem (FFmpeg fast-start)
+    # falhe quando o TEMP do sistema é limpo/sincronizado durante renders longos.
+    tmp_render = Path(tempfile.gettempdir()) / f"motion_render_{os.getpid()}_{formato.id}"
+
+    def _preparar_tmp() -> dict:
+        shutil.rmtree(tmp_render, ignore_errors=True)
+        tmp_render.mkdir(parents=True, exist_ok=True)
+        return {**os.environ, "TMP": str(tmp_render), "TEMP": str(tmp_render), "TMPDIR": str(tmp_render)}
+
+    preset = _preset_x264(getattr(projeto.render, "x264_preset", "veryfast"))
+    if preset == "veryfast":
+        # Prioriza velocidade no padrão sem perder a opção de presets mais lentos via config.
+        preset = "superfast"
     tentativas = [
-        ["--concurrency", str(projeto.render.concorrencia), "--crf", str(projeto.render.crf)],
-        ["--concurrency", "1", "--x264-preset", "ultrafast", "--crf", "28"],
+        {
+            "rotulo": "padrao",
+            "extras": [
+                "--concurrency", str(conc),
+                "--x264-preset", preset,
+                "--crf", str(projeto.render.crf),
+                "--timeout", "45000",
+            ],
+        },
+        {
+            "rotulo": "fallback estabilidade",
+            "extras": [
+                "--concurrency", "1",
+                "--x264-preset", "ultrafast",
+                "--crf", "28",
+                "--timeout", "90000",
+                "--disallow-parallel-encoding",
+            ],
+        },
+        {
+            "rotulo": "fallback compositor",
+            "extras": [
+                "--concurrency", "1",
+                "--x264-preset", "ultrafast",
+                "--crf", "30",
+                "--timeout", "90000",
+                "--disallow-parallel-encoding",
+                "--offthreadvideo-video-threads", "1",
+                "--offthreadvideo-cache-size-in-bytes", "134217728",
+            ],
+        },
+        {
+            "rotulo": "fallback memoria",
+            "extras": [
+                "--concurrency", "1",
+                "--x264-preset", "ultrafast",
+                "--crf", "32",
+                "--scale", "0.75",
+                "--timeout", "120000",
+                "--disallow-parallel-encoding",
+                "--offthreadvideo-video-threads", "1",
+                "--offthreadvideo-cache-size-in-bytes", "67108864",
+            ],
+        },
+        {
+            "rotulo": "fallback extremo",
+            "extras": [
+                "--concurrency", "1",
+                "--x264-preset", "ultrafast",
+                "--crf", "34",
+                "--scale", "0.6",
+                "--timeout", "120000",
+                "--disallow-parallel-encoding",
+                "--offthreadvideo-video-threads", "1",
+                "--offthreadvideo-cache-size-in-bytes", "50331648",
+            ],
+        },
     ]
-    r = None
-    for i, extras in enumerate(tentativas, start=1):
+    for i, tentativa in enumerate(tentativas, start=1):
+        extras = tentativa["extras"]
         cmd = [*cmd_base, *extras]
-        r = subprocess.run(cmd, cwd=REMOTION, text=True, capture_output=True, encoding="utf-8", errors="replace")
-        if r.returncode == 0:
+        env_render = _preparar_tmp()
+        code, log_render = _rodar_stream(cmd, REMOTION, env=env_render)
+        if code == 0:
             if i > 1:
-                print(f"[{ETAPA}] render concluído com parâmetros de fallback (tentativa {i})")
+                print(f"[{ETAPA}] render concluído com parâmetros de fallback (tentativa {i}: {tentativa['rotulo']})")
             break
-        saida_erro = f"{r.stdout}\n{r.stderr}"
-        if i < len(tentativas) and _erro_memoria_render(saida_erro):
-            print(f"[{ETAPA}] falha de memória no encoder; repetindo com parâmetros mais leves…")
+        erro_recuperavel = (
+            _erro_memoria_render(log_render)
+            or _erro_instabilidade_compositor(log_render)
+            or _erro_stitch(log_render)
+        )
+        if i < len(tentativas) and erro_recuperavel:
+            print(
+                f"[{ETAPA}] falha de render ({tentativa['rotulo']}); repetindo com parâmetros mais leves…"
+            )
             continue
-        raise RuntimeError(f"Render falhou:\n{r.stdout[-3000:]}\n{r.stderr[-3000:]}")
+        shutil.rmtree(tmp_render, ignore_errors=True)
+        raise RuntimeError(f"Render falhou:\n{log_render[-6000:]}")
+
+    shutil.rmtree(tmp_render, ignore_errors=True)
 
     meta = ffprobe(saida)
     stream = next(s for s in meta["streams"] if s["codec_type"] == "video")

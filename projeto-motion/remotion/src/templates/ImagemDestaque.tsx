@@ -8,7 +8,7 @@ export const schema = baseSchema.extend({
   src: z.string(),
   texto: z.string().default(""),
   legenda: z.string().default(""),
-  zoom: z.number().default(1.12),
+  zoom: z.number().default(1),
   focoX: z.number().min(0).max(1).default(0.5),
   focoY: z.number().min(0).max(1).default(0.5),
   moldura: z.boolean().default(true),
@@ -26,13 +26,28 @@ const resolver = (src: string) =>
 export const ImagemDestaque: React.FC<Props> = (p) => {
   const esc = useEscala();
   const frame = useCurrentFrame();
-  const { durationInFrames, width, height } = useVideoConfig();
+  const { width, height, durationInFrames } = useVideoConfig();
   const vertical = height > width;
-  const kb = interpolate(frame, [0, durationInFrames], [1, p.zoom]);
   const txt = useEntrada(10, p.spring, 20);
+  const entBloco = useEntrada(0, p.spring, 20);
+  const deBaixo = p.animacaoEntrada === "de_baixo";
+  const deCima = p.animacaoEntrada === "de_cima";
+  const saidaRapida = Math.max(1, Math.round(p.saidaFrames * 0.45));
+  const progSaida = interpolate(
+    frame,
+    [Math.max(0, durationInFrames - saidaRapida), durationInFrames],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const deslocSaida =
+    p.animacaoSaida === "para_cima"
+      ? -progSaida * 200 * esc
+      : p.animacaoSaida === "para_baixo"
+        ? progSaida * 200 * esc
+        : 0;
   const temTexto = Boolean(p.texto);
   return (
-    <Cartao {...p}>
+    <Cartao {...p} corFundo="transparent">
       <div
         style={{
           display: "flex",
@@ -51,7 +66,13 @@ export const ImagemDestaque: React.FC<Props> = (p) => {
             borderRadius: p.moldura ? 32 * esc : 0,
             overflow: "hidden",
             boxShadow: p.moldura ? `0 ${30 * esc}px ${80 * esc}px rgba(0,0,0,.45)` : undefined,
-            background: p.corFundoSecundario,
+            background: "transparent",
+            opacity: entBloco,
+            transform: deBaixo
+              ? `translateY(${(1 - entBloco) * 150 * esc + deslocSaida}px)`
+              : deCima
+                ? `translateY(${(1 - entBloco) * -150 * esc + deslocSaida}px)`
+                : `translateY(${deslocSaida}px) scale(${0.92 + 0.08 * entBloco})`,
           }}
         >
           <Img
@@ -59,10 +80,8 @@ export const ImagemDestaque: React.FC<Props> = (p) => {
             style={{
               width: "100%",
               height: "100%",
-              objectFit: "cover",
+              objectFit: "contain",
               objectPosition: `${p.focoX * 100}% ${p.focoY * 100}%`,
-              transform: `scale(${kb})`,
-              transformOrigin: `${p.focoX * 100}% ${p.focoY * 100}%`,
               display: "block",
             }}
           />
@@ -73,7 +92,11 @@ export const ImagemDestaque: React.FC<Props> = (p) => {
               flex: 1,
               textAlign: vertical ? "center" : "left",
               opacity: txt,
-              transform: `translateY(${(1 - txt) * 30 * esc}px)`,
+              transform: deBaixo
+                ? `translateY(${(1 - txt) * 130 * esc + deslocSaida}px)`
+                : deCima
+                  ? `translateY(${(1 - txt) * -130 * esc + deslocSaida}px)`
+                  : `translateY(${deslocSaida}px)`,
             }}
           >
             <div style={{ fontWeight: p.fonte.peso, fontSize: 72 * esc, lineHeight: 1.1 }}>

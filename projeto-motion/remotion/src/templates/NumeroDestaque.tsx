@@ -49,6 +49,8 @@ export const NumeroDestaque: React.FC<Props> = (p) => {
   const esc = useEscala();
   const ent = useEntrada(0, p.spring, 25);
   const rot = useEntrada(10, p.spring, 20);
+  const deBaixo = p.animacaoEntrada === "de_baixo";
+  const deCima = p.animacaoEntrada === "de_cima";
   const contagem = useJanela(CONFIG.janelaContagem[0], CONFIG.janelaContagem[1], {
     maxS: CONFIG.contagemMaxS,
     minS: CONFIG.contagemMinS,
@@ -72,7 +74,11 @@ export const NumeroDestaque: React.FC<Props> = (p) => {
           color: cor,
           letterSpacing: "-0.04em",
           opacity: ent,
-          transform: `scale(${CONFIG.escalaInicial + (1 - CONFIG.escalaInicial) * ent})`,
+          transform: deBaixo
+            ? `translateY(${(1 - ent) * 150 * esc}px)`
+            : deCima
+              ? `translateY(${(1 - ent) * -150 * esc}px)`
+              : `scale(${CONFIG.escalaInicial + (1 - CONFIG.escalaInicial) * ent})`,
           fontVariantNumeric: "tabular-nums",
           maxWidth: "100%",
         }}

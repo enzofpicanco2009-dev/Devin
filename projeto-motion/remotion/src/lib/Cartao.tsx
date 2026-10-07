@@ -21,17 +21,36 @@ export const Cartao: React.FC<
   >
 > = ({ children, justify = "center", ...p }) => {
   const frame = useCurrentFrame();
-  const { durationInFrames } = useVideoConfig();
-  const opIn = interpolate(frame, [0, p.entradaFrames], [0, 1], {
+  const { durationInFrames, width, height } = useVideoConfig();
+  const escala = Math.min(width, height) / 1080;
+  const entradaFadeRapido = Math.max(1, Math.round(p.entradaFrames * 0.35));
+  const saidaFramesRapida = Math.max(1, Math.round(p.saidaFrames * 0.45));
+  const inicioSaida = Math.max(0, durationInFrames - saidaFramesRapida);
+  const opIn = interpolate(frame, [0, entradaFadeRapido, p.entradaFrames], [0, 0.85, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
   const opOut = interpolate(
     frame,
-    [durationInFrames - p.saidaFrames, durationInFrames],
+    [inicioSaida, durationInFrames],
     [1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
+  const progEntrada = interpolate(frame, [0, p.entradaFrames], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const progSaida = interpolate(
+    frame,
+    [inicioSaida, durationInFrames],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  let deslocamentoY = 0;
+  if (p.animacaoEntrada === "de_baixo") deslocamentoY += (1 - progEntrada) * 180 * escala;
+  if (p.animacaoEntrada === "de_cima") deslocamentoY -= (1 - progEntrada) * 180 * escala;
+  if (p.animacaoSaida === "para_cima") deslocamentoY -= progSaida * 220 * escala;
+  if (p.animacaoSaida === "para_baixo") deslocamentoY += progSaida * 220 * escala;
   return (
     <AbsoluteFill style={{ backgroundColor: p.corFundo }}>
       <AbsoluteFill
@@ -43,6 +62,7 @@ export const Cartao: React.FC<
           paddingLeft: `${p.safeArea.lados}%`,
           paddingRight: `${p.safeArea.lados}%`,
           opacity: Math.min(opIn, opOut),
+          transform: `translateY(${deslocamentoY}px)`,
           fontFamily: p.fonte.familia,
           color: p.corTexto,
         }}

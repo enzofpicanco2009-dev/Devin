@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 import unicodedata
 
 from .comum import CONFIG
@@ -137,3 +138,12 @@ def criar_canal(
     if design:
         (pasta / "tema.json").write_text(json.dumps(design, ensure_ascii=False, indent=2), encoding="utf-8")
     return listar_canais()[[c["id"] for c in listar_canais()].index(cid)]
+
+
+def excluir_canal(canal_id: str) -> None:
+    if not re.fullmatch(r"[A-Za-z0-9_\-]+", canal_id):
+        raise ValueError("ID de canal inválido")
+    pasta = CANAIS / canal_id
+    if not pasta.exists() or not (pasta / "canal.json").exists():
+        raise FileNotFoundError(f"Canal não encontrado: {canal_id}")
+    shutil.rmtree(pasta)

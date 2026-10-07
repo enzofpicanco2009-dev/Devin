@@ -1,5 +1,5 @@
 import React from "react";
-import { interpolate, useCurrentFrame, useVideoConfig } from "remotion";
+import { Easing, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import { z } from "zod";
 import { baseSchema } from "../lib/base";
 import { Cartao, Rotulo, useEntrada, useEscala } from "../lib/Cartao";
@@ -25,60 +25,105 @@ export const SetaTendencia: React.FC<Props> = (p) => {
   const sobe = p.direcao === "sobe";
   const bom = sobe === p.positivoQuandoSobe;
   const cor = bom ? p.corPositivo : p.corNegativo;
-  const desenho = interpolate(frame, [4, fps * 0.9], [0, 1], {
+  const desenho = interpolate(frame, [2, fps * 0.78], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
-    easing: (t) => 1 - Math.pow(1 - t, 3),
+    easing: Easing.bezier(0.22, 1, 0.36, 1),
   });
-  const txt = useEntrada(Math.round(fps * 0.6), p.spring, 20);
+  const txt = useEntrada(Math.round(fps * 0.18), p.spring, 30);
+  const deBaixo = p.animacaoEntrada === "de_baixo";
+  const deCima = p.animacaoEntrada === "de_cima";
   const vertical = height > width;
-  const W = 900 * esc;
-  const H = 520 * esc;
-  // linha em degraus subindo/descendo, com ponta de seta
+  const W = width * (vertical ? 0.9 : 0.92);
+  const H = height * (vertical ? 0.62 : 0.72);
+
+  // Seta minimalista em zigue-zague, inspirada no layout de referência.
   const pts = sobe
     ? [
-        [0, H * 0.85],
-        [W * 0.3, H * 0.7],
-        [W * 0.5, H * 0.8],
-        [W * 0.75, H * 0.35],
-        [W, H * 0.12],
+        [W * 0.14, H * 0.82],
+        [W * 0.43, H * 0.50],
+        [W * 0.56, H * 0.63],
+        [W * 0.87, H * 0.24],
       ]
     : [
-        [0, H * 0.15],
-        [W * 0.3, H * 0.3],
-        [W * 0.5, H * 0.2],
-        [W * 0.75, H * 0.65],
-        [W, H * 0.88],
+        [W * 0.14, H * 0.20],
+        [W * 0.42, H * 0.44],
+        [W * 0.58, H * 0.34],
+        [W * 0.86, H * 0.72],
       ];
-  const d = pts.map(([x, y], i) => `${i ? "L" : "M"}${x},${y}`).join(" ");
-  const comp = W * 1.6;
-  const [px, py] = pts[pts.length - 1];
-  const ang = Math.atan2(py - pts[pts.length - 2][1], px - pts[pts.length - 2][0]);
-  const pontaOp = desenho > 0.90 ? 1 : 0;
-  const s = 75 * esc;
+  const [tipX, tipY] = pts[pts.length - 1];
+  const [prevX, prevY] = pts[pts.length - 2];
+  const ang = Math.atan2(tipY - prevY, tipX - prevX);
+  const s = 182 * esc;
+  const larguraSeta = 90 * esc;
+  const recuoCorpo = s * 0.84;
+  const endX = tipX - recuoCorpo * Math.cos(ang);
+  const endY = tipY - recuoCorpo * Math.sin(ang);
+  const ptsCorpo = [...pts.slice(0, -1), [endX, endY]];
+  const d = ptsCorpo.map(([x, y], i) => `${i ? "L" : "M"}${x},${y}`).join(" ");
+  const comp = W * 2.2;
+  const pontaOp = interpolate(desenho, [0.72, 0.9], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.out(Easing.cubic),
+  });
   const ponta = [
-    [px, py],
-    [px - s * Math.cos(ang - 0.45), py - s * Math.sin(ang - 0.45)],
-    [px - s * Math.cos(ang + 0.45), py - s * Math.sin(ang + 0.45)],
+    [tipX, tipY],
+    [endX + s * 0.14 * Math.cos(ang) - s * 0.86 * Math.cos(ang - 0.57), endY + s * 0.14 * Math.sin(ang) - s * 0.86 * Math.sin(ang - 0.57)],
+    [endX + s * 0.14 * Math.cos(ang) - s * 0.86 * Math.cos(ang + 0.57), endY + s * 0.14 * Math.sin(ang) - s * 0.86 * Math.sin(ang + 0.57)],
   ]
     .map((q) => q.join(","))
     .join(" ");
+
+  const deslocEntradaY = deBaixo
+    ? (1 - txt) * 120 * esc
+    : deCima
+      ? (1 - txt) * -120 * esc
+      : 0;
+  const lateralAlvo = (vertical ? 0.09 : 0.14) * width;
+  const deslocLateral = interpolate(txt, [0, 1], [0, sobe ? -lateralAlvo : lateralAlvo], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const topTexto = vertical ? (sobe ? "36%" : "34%") : sobe ? "34%" : "32%";
+
   return (
     <Cartao {...p}>
       <div
         style={{
-          display: "flex",
-          flexDirection: vertical ? "column" : "row",
-          alignItems: "center",
-          gap: 60 * esc,
+          position: "relative",
+          width: "100%",
+          height: "100%",
         }}
       >
-        <svg width={W + s} height={H + s} viewBox={`${-s / 2} ${-s / 2} ${W + s} ${H + s}`}>
+        <svg
+          width={W + s}
+          height={H + s}
+          viewBox={`${-s / 2} ${-s / 2} ${W + s} ${H + s}`}
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: "52%",
+            transform: "translate(-50%, -50%)",
+            overflow: "visible",
+          }}
+        >
           <path
             d={d}
             fill="none"
             stroke={cor}
-            strokeWidth={28 * esc}
+            strokeOpacity={0.18}
+            strokeWidth={larguraSeta * 1.16}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeDasharray={comp}
+            strokeDashoffset={comp * (1 - desenho)}
+          />
+          <path
+            d={d}
+            fill="none"
+            stroke={cor}
+            strokeWidth={larguraSeta}
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeDasharray={comp}
@@ -86,14 +131,45 @@ export const SetaTendencia: React.FC<Props> = (p) => {
           />
           <polygon points={ponta} fill={cor} opacity={pontaOp} />
         </svg>
-        <div style={{ textAlign: "center", opacity: txt, transform: `translateY(${(1 - txt) * 30}px)` }}>
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: topTexto,
+            textAlign: sobe ? "left" : "right",
+            opacity: txt,
+            transform: `translate(-50%, -50%) translateX(${deslocLateral}px) translateY(${deslocEntradaY}px) scale(${0.94 + txt * 0.06})`,
+            width: vertical ? "74%" : "60%",
+            pointerEvents: "none",
+          }}
+        >
           {p.valor && (
-            <div style={{ fontWeight: p.fonte.peso, fontSize: 150 * esc, color: cor, lineHeight: 1 }}>
+            <div
+              style={{
+                fontWeight: Math.max(800, Number(p.fonte.peso) || 800),
+                fontSize: (vertical ? 186 : 224) * esc,
+                color: cor,
+                lineHeight: 0.94,
+                letterSpacing: "-0.028em",
+                textShadow: `0 ${8 * esc}px ${24 * esc}px rgba(0,0,0,0.28)`,
+              }}
+            >
               {p.valor}
             </div>
           )}
           {p.texto && (
-            <Rotulo cor={p.corTexto} tamanho={52 * esc} fonte={p.fonteCorpo} style={{ marginTop: 20 * esc }}>
+            <Rotulo
+              cor={p.corTexto}
+              tamanho={(vertical ? 68 : 78) * esc}
+              fonte={p.fonteCorpo}
+              style={{
+                marginTop: 22 * esc,
+                fontWeight: Math.max(700, Number(p.fonteCorpo.peso) || 700),
+                lineHeight: 1.08,
+                letterSpacing: "-0.012em",
+                textShadow: `0 ${6 * esc}px ${18 * esc}px rgba(0,0,0,0.24)`,
+              }}
+            >
               {p.texto}
             </Rotulo>
           )}

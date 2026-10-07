@@ -57,6 +57,8 @@ function useEntradaItem(p: Props, i: number): number {
 const Item: React.FC<{ p: Props; i: number }> = ({ p, i }) => {
   const esc = useEscala();
   const ent = useEntradaItem(p, i);
+  const deBaixo = p.animacaoEntrada === "de_baixo";
+  const deCima = p.animacaoEntrada === "de_cima";
   if (ent <= 0) return null;
   return (
     <div
@@ -65,7 +67,11 @@ const Item: React.FC<{ p: Props; i: number }> = ({ p, i }) => {
         alignItems: "center",
         gap: 28 * esc,
         opacity: ent,
-        transform: `translateX(${(1 - ent) * -CONFIG.distanciaSlidePx * esc}px)`,
+        transform: deBaixo
+          ? `translateY(${(1 - ent) * CONFIG.distanciaSlidePx * esc}px)`
+          : deCima
+            ? `translateY(${(1 - ent) * -CONFIG.distanciaSlidePx * esc}px)`
+          : `translateX(${(1 - ent) * -CONFIG.distanciaSlidePx * esc}px)`,
         marginBottom: CONFIG.espacoEntreItens * esc,
       }}
     >
